@@ -1,27 +1,41 @@
 #!/usr/bin/env bash
-# Example Claude Code statusline showing the current model and the player state.
+# Example Claude Code statusline: model on the left, and on the far right the
+# player state (flat ► / ❚❚ glyph), a bouncing musical note, and the track title.
+#
 # Point your settings.json at it:
 #   "statusLine": { "type": "command", "command": "/path/to/examples/statusline.sh" }
-# Or just append `$(/path/to/scripts/vibecode.sh status)` to the statusline you already have.
+# Or just append `$(/path/to/scripts/vibecode.sh status)` to your own statusline.
 
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VIBE="$SCRIPT_DIR/../scripts/vibecode.sh"
 
 input="$(cat)"
 model="$(printf '%s' "$input" | sed -n 's/.*"display_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
-icon="$("$SCRIPT_DIR/../scripts/vibecode.sh" status)"
+left="${model:-Claude}"
 
-printf '%s' "${model:-Claude}"
+icon="$("$VIBE" status)"
 
+right=""
 if [ -n "$icon" ]; then
-  track="$("$SCRIPT_DIR/../scripts/vibecode.sh" track)"
-  # Two-frame note "animation": each statusline refresh picks a frame off the clock.
-  if [ "$icon" = "▶" ] && [ $(( $(date +%s) % 2 )) -eq 0 ]; then
-    note='♪'
-  else
-    note='♫'
+  track="$("$VIBE" track)"
+  note=""
+  if [ "$icon" = "►" ]; then
+    # Three-frame note animation; advances once per second whenever the
+    # statusline repaints (which happens while the agent is working).
+    frames=('♪' '♫' '♬')
+    note="${frames[$(( $(date +%s) % 3 ))]} "
   fi
-  printf ' | %s %s %s' "$icon" "$note" "${track:-vibecode.fm}"
+  right="$icon ${note}${track:-vibecode.fm}"
+fi
+
+if [ -n "$right" ]; then
+  width="${COLUMNS:-$(tput cols 2>/dev/null || echo 80)}"
+  pad=$(( width - ${#left} - ${#right} ))
+  [ "$pad" -lt 1 ] && pad=1
+  printf '%s%*s%s' "$left" "$pad" "" "$right"
+else
+  printf '%s' "$left"
 fi
 exit 0

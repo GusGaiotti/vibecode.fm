@@ -65,9 +65,18 @@ start_player() {
   else
     launcher="nohup"
   fi
-  $launcher mpv --no-video --no-terminal --really-quiet --idle=yes \
-    --loop-playlist=inf --volume="$VOLUME" --pause \
-    --input-ipc-server="$SOCK" "$SOURCE" </dev/null >/dev/null 2>&1 &
+  local args=(
+    --no-video --no-terminal --really-quiet
+    --idle=yes --keep-open=yes --loop-playlist=inf
+    --network-timeout=30
+    --volume="$VOLUME" --pause
+    --input-ipc-server="$SOCK"
+  )
+  # In debug mode, have mpv log why it might exit (network drop, decode error).
+  if [ -n "${VIBECODE_DEBUG:-}" ]; then
+    args+=(--log-file="$STATE_DIR/mpv.log" --msg-level=all=info)
+  fi
+  $launcher mpv "${args[@]}" "$SOURCE" </dev/null >/dev/null 2>&1 &
   disown 2>/dev/null || true
   log "start_player: launched via $launcher, source=$SOURCE"
   # Give the socket a moment to come up; bail quietly if it never does.
@@ -121,9 +130,11 @@ do_status() {
   [ -e "$SOCK" ] || return 0
   local resp
   resp="$(ipc_send '{"command":["get_property","pause"]}')"
+  # Geometric glyphs (not the ▶️/⏸️ emoji) so terminals render them flat,
+  # without the rounded coloured emoji background.
   case "$resp" in
-    *'"data":false'*) printf '▶' ;;
-    *'"data":true'*)  printf '⏸' ;;
+    *'"data":false'*) printf '►' ;;
+    *'"data":true'*)  printf '❚❚' ;;
   esac
 }
 

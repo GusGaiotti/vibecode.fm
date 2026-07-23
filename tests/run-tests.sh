@@ -114,9 +114,9 @@ teardown
 setup
 assert_eq "$(run status)" "" "status is empty with no player"
 run play >/dev/null
-assert_eq "$(run status)" "▶" "status shows play icon while playing"
+assert_eq "$(run status)" "►" "status shows play icon while playing"
 run pause >/dev/null
-assert_eq "$(run status)" "⏸" "status shows pause icon while paused"
+assert_eq "$(run status)" "❚❚" "status shows pause icon while paused"
 teardown
 
 # --- track prints the current title ------------------------------------------

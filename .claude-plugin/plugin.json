@@ -1,7 +1,7 @@
 {
   "name": "vibecode-fm",
   "description": "Music that plays while Claude Code works and pauses when it's your turn.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Gustavo Gaiotti"
   },
