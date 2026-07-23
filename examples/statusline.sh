@@ -13,5 +13,15 @@ model="$(printf '%s' "$input" | sed -n 's/.*"display_name":[[:space:]]*"\([^"]*\
 icon="$("$SCRIPT_DIR/../scripts/vibecode.sh" status)"
 
 printf '%s' "${model:-Claude}"
-[ -n "$icon" ] && printf ' | %s vibecode.fm' "$icon"
+
+if [ -n "$icon" ]; then
+  track="$("$SCRIPT_DIR/../scripts/vibecode.sh" track)"
+  # Two-frame note "animation": each statusline refresh picks a frame off the clock.
+  if [ "$icon" = "▶" ] && [ $(( $(date +%s) % 2 )) -eq 0 ]; then
+    note='♪'
+  else
+    note='♫'
+  fi
+  printf ' | %s %s %s' "$icon" "$note" "${track:-vibecode.fm}"
+fi
 exit 0

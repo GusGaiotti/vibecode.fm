@@ -119,6 +119,16 @@ run pause >/dev/null
 assert_eq "$(run status)" "⏸" "status shows pause icon while paused"
 teardown
 
+# --- track prints the current title ------------------------------------------
+setup
+assert_eq "$(run track)" "" "track is empty with no player"
+run play >/dev/null
+assert_eq "$(run track)" "Fake FM - Test Track" "track prints the stream title"
+mkdir -p "$VIBECODE_STATE_DIR"
+touch "$VIBECODE_STATE_DIR/disabled"
+assert_eq "$(run track)" "" "track is empty while disabled"
+teardown
+
 # --- off kills and disables, on re-enables -----------------------------------
 setup
 run play >/dev/null

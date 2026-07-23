@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # vibecode.fm - drives a shared mpv instance over its JSON IPC socket.
-# Usage: vibecode.sh <play|pause|status|on|off>
+# Usage: vibecode.sh <play|pause|status|track|on|off>
 #
 # Invoked by Claude Code hooks, so the contract is strict: never block, never
 # write to stdout (except `status`), always exit 0.
@@ -93,15 +93,24 @@ do_status() {
   esac
 }
 
+do_track() {
+  [ -f "$DISABLED_FLAG" ] && return 0
+  [ -e "$SOCK" ] || return 0
+  ipc_send '{"command":["get_property","media-title"]}' \
+    | sed -n 's/.*"data":"\([^"]*\)".*/\1/p' | cut -c 1-48 | tr -d '\n'
+}
+
 main() {
   local action="${1:-}"
-  if [ "$action" != "status" ]; then
-    exec >/dev/null
-  fi
+  case "$action" in
+    status|track) ;;
+    *) exec >/dev/null ;;
+  esac
   case "$action" in
     play)   do_play ;;
     pause)  do_pause ;;
     status) do_status ;;
+    track)  do_track ;;
     on)     do_on ;;
     off)    do_off ;;
   esac

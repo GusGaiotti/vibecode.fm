@@ -23,6 +23,8 @@ case "$json" in
     printf '{"data":"mpv 0.38.0-fake","error":"success"}\n' ;;
   *'"get_property","pause"'*)
     printf '{"data":%s,"error":"success"}\n' "$(cat "$state_file" 2>/dev/null || echo true)" ;;
+  *'"get_property","media-title"'*)
+    printf '{"data":"Fake FM - Test Track","error":"success"}\n' ;;
   *'"set_property","pause",false'*)
     printf 'false\n' > "$state_file"
     printf '{"error":"success"}\n' ;;
