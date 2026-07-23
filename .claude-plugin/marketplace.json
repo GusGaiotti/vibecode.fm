@@ -1,0 +1,13 @@
+{
+  "name": "vibecode-fm",
+  "owner": {
+    "name": "Gustavo Gaiotti"
+  },
+  "plugins": [
+    {
+      "name": "vibecode-fm",
+      "source": "./",
+      "description": "Music that plays while Claude Code works and pauses when it's your turn."
+    }
+  ]
+}
