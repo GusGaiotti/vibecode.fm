@@ -78,8 +78,9 @@ do_off() {
 }
 
 do_on() {
+  # Only lift the flag: playback starts on the next agent event, so enabling
+  # doesn't blast music while nothing is happening.
   rm -f "$DISABLED_FLAG"
-  do_play
 }
 
 do_status() {

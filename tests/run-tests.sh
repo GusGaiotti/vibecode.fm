@@ -138,8 +138,10 @@ assert_exists "$VIBECODE_STATE_DIR/disabled" "off drops the disabled flag"
 assert_eq "$(run status)" "" "status is empty after off"
 run on >/dev/null
 assert_missing "$VIBECODE_STATE_DIR/disabled" "on clears the disabled flag"
-assert_eq "$(launches)" "2" "on starts the player again"
-assert_eq "$(player_state)" "false" "player is unpaused after on"
+assert_eq "$(launches)" "1" "on alone does not start playback"
+run play >/dev/null
+assert_eq "$(launches)" "2" "next play event starts the player after on"
+assert_eq "$(player_state)" "false" "player is unpaused after on + play"
 teardown
 
 # --- no mpv installed: everything degrades silently --------------------------
