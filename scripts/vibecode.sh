@@ -16,6 +16,14 @@ DISABLED_FLAG="$STATE_DIR/disabled"
 SOURCE="${VIBECODE_SOURCE:-$PLUGIN_ROOT/playlists/default.m3u}"
 VOLUME="${VIBECODE_VOLUME:-70}"
 
+log() {
+  # Off unless VIBECODE_DEBUG is set. Writes to a file, never to stdout.
+  [ -n "${VIBECODE_DEBUG:-}" ] || return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null
+  printf '%s pid=%s %s\n' "$(date '+%H:%M:%S')" "$$" "$*" \
+    >> "${VIBECODE_LOG:-$STATE_DIR/vibecode.log}" 2>/dev/null
+}
+
 ipc_send() {
   # Sends one JSON command to the mpv socket, prints the raw response.
   local json="$1"
@@ -44,29 +52,54 @@ player_alive() {
 }
 
 start_player() {
-  command -v mpv >/dev/null 2>&1 || return 1
+  if ! command -v mpv >/dev/null 2>&1; then
+    log "start_player: mpv not found"
+    return 1
+  fi
   rm -f "$SOCK"
-  nohup mpv --no-video --no-terminal --really-quiet --idle=yes \
+  # Detach into a new session so the player outlives the hook process group.
+  # setsid is the reliable tool on Linux; fall back to nohup (e.g. macOS).
+  local launcher
+  if command -v setsid >/dev/null 2>&1; then
+    launcher="setsid"
+  else
+    launcher="nohup"
+  fi
+  $launcher mpv --no-video --no-terminal --really-quiet --idle=yes \
     --loop-playlist=inf --volume="$VOLUME" --pause \
     --input-ipc-server="$SOCK" "$SOURCE" </dev/null >/dev/null 2>&1 &
   disown 2>/dev/null || true
+  log "start_player: launched via $launcher, source=$SOURCE"
   # Give the socket a moment to come up; bail quietly if it never does.
   for _ in $(seq 1 30); do
-    player_alive && return 0
+    player_alive && { log "start_player: socket up"; return 0; }
     sleep 0.1
   done
+  log "start_player: socket never came up"
   return 1
 }
 
 do_play() {
-  [ -f "$DISABLED_FLAG" ] && return 0
+  if [ -f "$DISABLED_FLAG" ]; then
+    log "play: disabled flag set, skipping"
+    return 0
+  fi
   mkdir -p "$STATE_DIR"
-  player_alive || start_player || return 0
+  if player_alive; then
+    log "play: player already alive, resuming"
+  else
+    log "play: no live player, starting one"
+    start_player || return 0
+  fi
   ipc_send '{"command":["set_property","pause",false]}' >/dev/null
 }
 
 do_pause() {
-  [ -e "$SOCK" ] || return 0
+  if [ ! -e "$SOCK" ]; then
+    log "pause: no socket, nothing to do"
+    return 0
+  fi
+  log "pause: pausing player"
   ipc_send '{"command":["set_property","pause",true]}' >/dev/null
 }
 
@@ -103,6 +136,7 @@ do_track() {
 
 main() {
   local action="${1:-}"
+  log "action=$action"
   case "$action" in
     status|track) ;;
     *) exec >/dev/null ;;

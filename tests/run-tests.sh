@@ -168,6 +168,16 @@ assert_eq "$?" "0" "play exits 0 with a broken IPC transport"
 assert_eq "$out" "" "play is silent with a broken IPC transport"
 teardown
 
+# --- debug log is off by default, on with VIBECODE_DEBUG ---------------------
+setup
+run play >/dev/null
+assert_missing "$VIBECODE_STATE_DIR/vibecode.log" "no debug log without VIBECODE_DEBUG"
+VIBECODE_DEBUG=1 run play >/dev/null
+assert_exists "$VIBECODE_STATE_DIR/vibecode.log" "debug log written with VIBECODE_DEBUG"
+grep -q 'action=play' "$VIBECODE_STATE_DIR/vibecode.log" \
+  && pass || fail "debug log records the action"
+teardown
+
 # --- unknown action is a silent no-op ----------------------------------------
 setup
 out="$(run bogus)"
