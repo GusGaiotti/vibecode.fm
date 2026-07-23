@@ -14,3 +14,4 @@ icon="$("$SCRIPT_DIR/../scripts/vibecode.sh" status)"
 
 printf '%s' "${model:-Claude}"
 [ -n "$icon" ] && printf ' | %s vibecode.fm' "$icon"
+exit 0

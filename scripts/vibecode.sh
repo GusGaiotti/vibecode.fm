@@ -51,8 +51,7 @@ start_player() {
     --input-ipc-server="$SOCK" "$SOURCE" </dev/null >/dev/null 2>&1 &
   disown 2>/dev/null || true
   # Give the socket a moment to come up; bail quietly if it never does.
-  local i
-  for i in $(seq 1 30); do
+  for _ in $(seq 1 30); do
     player_alive && return 0
     sleep 0.1
   done
