@@ -51,7 +51,15 @@ function buildArgs(source, volume) {
     '--idle=yes',
     '--keep-open=yes',
     '--loop-playlist=inf',
-    '--network-timeout=30',
+    '--network-timeout=15',
+    // Radio streams drop or end prematurely now and then; reconnect the HTTP
+    // stream transparently (even at EOF) instead of stalling, so a blip
+    // recovers in a second or two rather than leaving a long silent gap.
+    '--stream-lavf-o=reconnect=1,reconnect_at_eof=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=2',
+    // A generous demuxer cache keeps audio flowing over a brief reconnect.
+    '--cache=yes',
+    '--demuxer-max-bytes=32MiB',
+    '--demuxer-readahead-secs=30',
     `--volume=${volume}`,
     '--pause',
     `--input-ipc-server=${ipcPath()}`,
