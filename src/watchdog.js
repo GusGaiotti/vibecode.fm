@@ -37,9 +37,19 @@ function idleTimeoutMs() {
   return (seconds > 0 ? seconds : 120) * 1000;
 }
 
-// Pure decision, unit-tested: pause only while playing with no recent events.
+// A soft-paused (muted) player keeps its stream warm so resume is instant, but
+// it shouldn't download forever. Give it much longer than a live/aborted turn
+// so answering a question or a permission prompt — even a slow one — still
+// resumes instantly; only a truly abandoned session hits the hard pause.
+const WARM_HOLD_MULTIPLIER = 8; // 8 * 120s = 16min warm before the stream stops
+
+// Pure decision, unit-tested: hard-pause a PLAYING player that has gone idle
+// (a turn that died without a Stop hook), or a MUTED one only after the much
+// longer warm-hold window.
 function shouldPause(status, idleMs, limitMs) {
-  return status === '►' && idleMs >= limitMs;
+  if (status === '►') return idleMs >= limitMs;
+  if (status === '❚❚') return idleMs >= limitMs * WARM_HOLD_MULTIPLIER;
+  return false;
 }
 
 function beat() {
@@ -72,15 +82,9 @@ async function run() {
     }
     const idleMs = Date.now() - controller.lastActivityMs();
     if (shouldPause(status, idleMs, idleTimeoutMs())) {
-      // A turn died without a Stop hook: silence AND stop the stream.
-      log(`no play events for ${Math.round(idleMs / 1000)}s, pausing`);
-      await controller.hardPause();
-      return cleanup();
-    }
-    if (status === '❚❚' && idleMs >= idleTimeoutMs()) {
-      // Soft-paused (muted, stream still flowing) and long idle: stop the
-      // download for real. The next play respawns us.
-      log('idle, stopping the stream');
+      // Either a turn died playing without a Stop hook, or a muted player sat
+      // idle past the warm-hold window: silence AND stop the stream for real.
+      log(`idle ${Math.round(idleMs / 1000)}s (${status}), hard-pausing`);
       await controller.hardPause();
       return cleanup();
     }
