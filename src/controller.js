@@ -18,8 +18,8 @@ const {
 } = require('./paths');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const FADE_MS = 350;
-const FADE_STEPS = 7;
+const FADE_MS = 180;
+const FADE_STEPS = 6;
 const ACTIVITY_WINDOW_MS = 8000;
 const ACTIVITY_MAX = 6; // events in the window that count as "full intensity"
 
@@ -89,13 +89,17 @@ async function isHalted() {
   return (await getProp('mute')) === true;
 }
 
-async function fadeTo(target) {
+// Ramp the volume from `from` to `to` over FADE_MS. Kept short so pause/resume
+// feel immediate while still avoiding clicks.
+async function fade(from, to) {
   for (let i = 1; i <= FADE_STEPS; i += 1) {
-    const v = Math.round((target * i) / FADE_STEPS);
+    const v = Math.round(from + ((to - from) * i) / FADE_STEPS);
     await send(ipcPath(), { command: ['set_property', 'volume', v] });
     await sleep(FADE_MS / FADE_STEPS);
   }
 }
+
+const fadeTo = (target) => fade(0, target);
 
 function recordActivity() {
   try {
@@ -194,11 +198,12 @@ async function play() {
     }
   }
   if (wasHalted) {
-    // Real halted->playing transition: fade in to the target volume.
-    await send(ipcPath(), { command: ['set_property', 'volume', 0] });
+    // Real halted->playing transition. Come back already audible (start at
+    // half the target so sound returns on the first frame) then ramp up.
+    const target = targetVolume();
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    await fadeTo(targetVolume());
+    await fade(Math.round(target / 2), target);
   } else if (adaptiveEnabled()) {
     // Already playing: nudge the volume toward the current intensity so the
     // music swells and eases with how hard the agent is working.
@@ -207,17 +212,21 @@ async function play() {
   ensureWatchdog();
 }
 
+// Quick fade from the current volume down to 0, then leave it at 0.
+async function fadeOut() {
+  const cur = await getProp('volume');
+  if (typeof cur === 'number' && cur > 0) await fade(cur, 0);
+}
+
 async function pause() {
   log('action=pause');
   if (!(await alive())) {
     log('pause: no live player, nothing to do');
     return;
   }
-  if ((await isHalted()) === false) {
-    await fadeTo(0);
-  }
-  // Soft pause: mute but keep the stream flowing so the next play is instant.
-  // The watchdog hard-pauses after the idle timeout to stop the download.
+  // Soft pause: mute at once (mpv's mute is click-free) so the music stops the
+  // instant Claude asks, and keep the stream flowing so the next play is
+  // immediate. The watchdog hard-pauses after the idle timeout.
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
   ensureWatchdog();
 }
@@ -226,7 +235,7 @@ async function pause() {
 async function hardPause() {
   if (!(await alive())) return;
   if ((await isHalted()) === false) {
-    await fadeTo(0);
+    await fadeOut();
   }
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
   await send(ipcPath(), { command: ['set_property', 'pause', true] });

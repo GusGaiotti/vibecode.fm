@@ -6,10 +6,12 @@
 // silent, and the process always exits 0 so a hook can never break a session.
 
 // Hooks are BLOCKING: Claude Code waits for them before starting the turn or
-// the tool. Player work (IPC round-trips, fades, cold starts) can take from
-// hundreds of ms to seconds, so these actions re-spawn themselves detached
-// and return immediately — the session never waits for the music.
-const DETACHED_ACTIONS = new Set(['play', 'pause', 'radio']);
+// the tool. `play`/`radio` can cold-start mpv (seconds), so they re-spawn
+// themselves detached and return immediately — the session never waits for a
+// player boot. `pause` never cold-starts (it no-ops without a live player), so
+// it runs inline: skipping the ~250ms re-spawn makes the music stop the moment
+// Claude asks for your attention.
+const DETACHED_ACTIONS = new Set(['play', 'radio']);
 
 function detach() {
   const { spawn } = require('child_process');
