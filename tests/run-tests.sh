@@ -168,6 +168,13 @@ assert_eq "$?" "0" "play exits 0 with a broken IPC transport"
 assert_eq "$out" "" "play is silent with a broken IPC transport"
 teardown
 
+# --- VIBECODE_MPV_ARGS is passed through to mpv ------------------------------
+setup
+VIBECODE_MPV_ARGS="--ao=null" run play >/dev/null
+grep -q -- '--ao=null' "$VIBECODE_TEST_LOG/mpv.launches" \
+  && pass || fail "VIBECODE_MPV_ARGS reaches the mpv command line"
+teardown
+
 # --- debug log is off by default, on with VIBECODE_DEBUG ---------------------
 setup
 run play >/dev/null

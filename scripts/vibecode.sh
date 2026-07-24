@@ -76,6 +76,12 @@ start_player() {
   if [ -n "${VIBECODE_DEBUG:-}" ]; then
     args+=(--log-file="$STATE_DIR/mpv.log" --msg-level=all=info)
   fi
+  # Environment-specific mpv flags, e.g. VIBECODE_MPV_ARGS="--ao=pulse" on WSL,
+  # where mpv otherwise picks a broken PipeWire output and stays silent.
+  if [ -n "${VIBECODE_MPV_ARGS:-}" ]; then
+    # shellcheck disable=SC2206
+    args+=(${VIBECODE_MPV_ARGS})
+  fi
   $launcher mpv "${args[@]}" "$SOURCE" </dev/null >/dev/null 2>&1 &
   disown 2>/dev/null || true
   log "start_player: launched via $launcher, source=$SOURCE"
