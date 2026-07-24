@@ -3,17 +3,17 @@
 
 // Example Claude Code statusline for vibecode.fm.
 //
-//   ▶ playing : icon + track/station on the left, then a parade of themed
-//               sprites drifting across the line with the music (flowers &
-//               notes on lofi, matrix code on DEF CON, retro glyphs on
-//               synthwave, ...), model dimmed on the right.
-//   ▮▮ paused : solid pause icon + track, the sprites frozen and dimmed.
+//   ► playing : play glyph + track on the left, themed sprites drifting in from
+//               both sides around a rotating splash phrase in the centre (like
+//               Minecraft's splash text, but tuned to the station), model on
+//               the right.
+//   paused    : the centre reads "Your move!" with the sprites frozen and dim.
 //   idle      : just the model name.
 //
-// The parade is honest eye-candy: it is NOT synced to the audio waveform (the
-// statusline can't repaint fast enough). Sprites scroll and recolour purely as
-// a function of time; how FAST and DENSE they move tracks how hard the agent is
-// working (activityLevel), and the colours come from the current station theme.
+// Honest eye-candy: the sprites are NOT synced to the audio waveform. They
+// scroll and recolour as a function of time; how fast/dense they move tracks
+// how hard the agent is working (activityLevel), and colours + glyphs + splash
+// phrases all come from the current station theme.
 //
 // Point settings.json at it:
 //   "statusLine": { "type": "command", "command": "node /path/to/examples/statusline.js" }
@@ -29,12 +29,13 @@ const paint = (s, r, g, b, bold) => `${bold ? BOLD : ''}${fg(r, g, b)}${s}${RESE
 
 // ---- Theme fallback (chill / lofi / Groove Salad and custom stations) --------
 const DEFAULT_THEME = {
+  tag: 'chill',
   stops: [
-    { p: 0.0, c: [80, 210, 170] }, // teal
-    { p: 0.5, c: [130, 205, 120] }, // green
-    { p: 1.0, c: [240, 200, 95] }, // warm gold
+    { p: 0.0, c: [80, 210, 170] },
+    { p: 0.5, c: [130, 205, 120] },
+    { p: 1.0, c: [240, 200, 95] },
   ],
-  sprites: ['❀', '♪', '✿', '♫', '❁', '♬', '✧', '·'], // flowers & notes
+  sprites: ['❀', '♪', '✿', '♫', '❁', '♬', '♩', '✧'], // flowers & notes
 };
 
 function gradientColor(stops, t) {
@@ -50,16 +51,113 @@ function gradientColor(stops, t) {
   return stops[stops.length - 1].c;
 }
 
-// A scrolling parade of the theme's sprites. `moving` drives the animation:
-// while playing they drift and recolour with time; while paused they sit still
-// and dim. Density and speed rise with how busy the agent is.
-function parade(cols, intensity, theme, moving) {
+// ---- Splash phrases ----------------------------------------------------------
+// Programming jokes and philosophical puns, per station vibe. English, short.
+const PHRASES = {
+  chill: [
+    'Compiling good vibes...',
+    'Refactoring my feelings',
+    'Lo-fi, high standards',
+    'Merge conflicts of the heart',
+    'while (alive) relax();',
+    'git commit -m "vibes"',
+  ],
+  hacker: [
+    'sudo make me a sandwich',
+    "There's no place like 127.0.0.1",
+    "It's not a bug, it's a 0-day",
+    'chmod 777 your dreams',
+    'The cake is a lie, root is real',
+    'rm -rf /doubt',
+  ],
+  synthwave: [
+    'Ride or die, mostly ride',
+    'The future is retro',
+    'Neon never dies',
+    'Outrun your deadlines',
+    '1985 called, it approves',
+  ],
+  metal: [
+    'Segfault of the ancients',
+    'Stack overflow of the damned',
+    'kill -9 the weak',
+    'Riff-driven development',
+    'Compile in fire',
+  ],
+  jazz: [
+    'Improvise your architecture',
+    'Syncopated semicolons',
+    'Cool as a nil pointer',
+    'Blue notes, green builds',
+  ],
+  vaporwave: [
+    'A E S T H E T I C undefined',
+    'Nostalgia.exe has stopped',
+    'Buy nothing, feel everything',
+    'Vibes from a dead future',
+  ],
+  space: [
+    'In space no one hears your typos',
+    'Floating point in the void',
+    'Lost in the async',
+    'A cosmic ray flipped my bit',
+  ],
+  glitch: [
+    "It's not a bug it's ▓ejfk",
+    'Reality buffer underrun',
+    '01100110 feelings',
+    'Corrupt but honest',
+  ],
+  tavern: [
+    'Roll for initiative',
+    'A bard walks into a repo',
+    'Quest: fix the merge',
+    'Ye olde stack trace',
+  ],
+  goa: [
+    'Consciousness not found (404)',
+    'Trance-pile the universe',
+    'Ego death, clean build',
+    'One with the async',
+  ],
+  beats: ['Drop the bass, not the table', 'Flow state, git rebase', 'Bars over var'],
+  indie: ["You wouldn't get this build", 'Twee-driven development', 'Heartfelt and hardcoded'],
+  spy: [
+    'This splash will self-destruct',
+    'Shaken, not stack-traced',
+    'License to kill -9',
+    "The name's Null. Pointer Null.",
+  ],
+};
+
+// Philosophical puns mixed into every theme.
+const UNIVERSAL = [
+  'I refactor, therefore I am',
+  'To be, or not to be null',
+  'Cogito ergo sum(array)',
+  'This too shall pass tests',
+  'The unexamined loop is not worth running',
+];
+
+const PHRASE_ROTATE_MS = 9000;
+
+function pickPhrase(theme) {
+  const pool = [...(PHRASES[theme.tag] || []), ...UNIVERSAL];
+  const i = Math.floor(Date.now() / PHRASE_ROTATE_MS) % pool.length;
+  return pool[i];
+}
+
+// ---- Sprite run --------------------------------------------------------------
+// A drifting run of the theme's sprites `cols` wide. `phase` offsets the left
+// and right runs so the two sides don't mirror each other.
+function spriteRun(cols, intensity, theme, moving, phase) {
+  if (cols <= 0) return '';
   const sprites = theme.sprites && theme.sprites.length ? theme.sprites : DEFAULT_THEME.sprites;
   const stops = theme.stops || DEFAULT_THEME.stops;
   const gap = moving ? Math.max(1, 3 - Math.round(intensity * 2)) : 3; // busier => denser
   const period = gap + 1;
-  const speed = 2 + intensity * 7; // cells per second
-  const offset = moving ? Math.floor((Date.now() / 1000) * speed) : 0;
+  const speed = 2 + intensity * 7;
+  const offset = (moving ? Math.floor((Date.now() / 1000) * speed) : 0) + phase;
   const flow = Date.now() / 1400;
   let out = '';
   for (let i = 0; i < cols; i += 1) {
@@ -74,14 +172,14 @@ function parade(cols, intensity, theme, moving) {
       const [r, g, b] = gradientColor(stops, slot * 0.17 + flow);
       out += paint(glyph, r, g, b, true);
     } else {
-      out += paint(glyph, 96, 104, 118); // frozen & dim
+      out += paint(glyph, 96, 104, 118);
     }
   }
   return out;
 }
 
 // ---- Title helpers -----------------------------------------------------------
-const TITLE_MAX = 34;
+const TITLE_MAX = 28;
 
 function marquee(text, max) {
   if (text.length <= max) return text;
@@ -113,13 +211,27 @@ function readStdin() {
   });
 }
 
-// The best label to show right now: the live "Artist – Track" if it has arrived
-// (a real title has spaces), otherwise the friendly station name, so the ugly
-// stream slug (e.g. "groovesalad-128-mp3") never shows.
 async function displayTitle() {
   const raw = await controller.track();
   if (raw && /\s/.test(raw)) return raw;
   return controller.stationLabel() || 'vibecode.fm';
+}
+
+// Build the centre band: a splash phrase centred, sprites drifting in from both
+// sides. Falls back to a full sprite run when there isn't room for the phrase.
+function centre(width, phraseText, phraseColor, intensity, theme, moving) {
+  if (width < 6) return ' '.repeat(Math.max(0, width));
+  const label = `"${phraseText}"`;
+  if (width >= label.length + 6) {
+    const side = width - label.length - 2;
+    const leftW = Math.floor(side / 2);
+    const rightW = side - leftW;
+    const [r, g, b] = phraseColor;
+    const left = spriteRun(leftW, intensity, theme, moving, 0);
+    const right = spriteRun(rightW, intensity, theme, moving, 5);
+    return `${left} ${paint(label, r, g, b, true)} ${right}`;
+  }
+  return spriteRun(width, intensity, theme, moving, 0);
 }
 
 async function main() {
@@ -141,14 +253,16 @@ async function main() {
     const moving = icon === '►';
     const theme = controller.stationTheme() || DEFAULT_THEME;
     const title = marquee(await displayTitle(), TITLE_MAX);
-    const glyph = moving
-      ? paint('▶', 90, 222, 120, true)
-      : paint('▮▮', 236, 200, 64, true);
-    const iconW = moving ? 1 : 2;
-    const mid = Math.max(6, width - iconW - 1 - title.length - model.length - 2);
-    const strip = parade(mid, controller.activityLevel(), theme, moving);
-    const titleColor = moving ? [228, 232, 238] : [176, 182, 190];
-    out = `${glyph} ${paint(title, ...titleColor, moving)} ${strip} ${paint(model, mr, mg, mb)}`;
+    const head = moving
+      ? `${paint('►', 90, 222, 120, true)} ${paint(title, 228, 232, 238, true)}`
+      : `${paint('·', 120, 128, 140)} ${paint(title, 150, 156, 166)}`;
+    const headLen = 2 + title.length; // glyph + space + title
+    const midW = Math.max(0, width - headLen - model.length - 2);
+    const bright = gradientColor(theme.stops || DEFAULT_THEME.stops, 1);
+    const band = moving
+      ? centre(midW, pickPhrase(theme), bright, controller.activityLevel(), theme, true)
+      : centre(midW, 'Your move!', [236, 200, 64], 0, theme, false);
+    out = `${head} ${band} ${paint(model, mr, mg, mb)}`;
   }
 
   process.stdout.write(out);
