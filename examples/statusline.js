@@ -75,11 +75,38 @@ function notePositions(cols, intensity, t) {
   return positions;
 }
 
+// Easter egg: every couple of minutes Pac-Man sweeps across the meter eating
+// the bars (a nod to pacman's ILoveCandy progress bar). Pure function of time,
+// so consecutive repaints show him advancing. Returns null outside a sweep.
+const PACMAN_PERIOD_S = 140;
+const PACMAN_SPEED = 7; // cells per second
+
+function pacmanPosition(cols) {
+  const phase = (Date.now() / 1000) % PACMAN_PERIOD_S;
+  const pos = Math.floor(phase * PACMAN_SPEED);
+  return pos < cols ? pos : null;
+}
+
 function equalizer(cols, intensity, theme) {
   const t = Date.now() / 110;
-  const notes = notePositions(cols, intensity, t / 4);
+  const pacman = pacmanPosition(cols);
+  const notes = pacman === null ? notePositions(cols, intensity, t / 4) : new Map();
   let out = '';
   for (let i = 0; i < cols; i += 1) {
+    if (pacman !== null) {
+      if (i === pacman) {
+        out += paint('ᗧ', 255, 220, 60, true);
+        continue;
+      }
+      if (i === pacman - 6) {
+        out += paint('ᗣ', 228, 70, 60, true); // the chase is on
+        continue;
+      }
+      if (i < pacman) {
+        out += paint(i % 2 ? '·' : ' ', 88, 98, 112); // eaten trail
+        continue;
+      }
+    }
     const note = notes.get(i);
     if (note) {
       const [r, g, b] = theme.note;
