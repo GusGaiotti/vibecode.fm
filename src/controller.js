@@ -14,6 +14,7 @@ const {
   stationFile,
   volumeFile,
   intentFile,
+  attentionFile,
   activityFile,
   watchdogFile,
   debugEnabled,
@@ -70,6 +71,44 @@ function latestToken() {
 // True when a newer event has taken over since `token` was stamped.
 function superseded(token) {
   return latestToken() > token;
+}
+
+// ---- Attention (mid-turn "your call") ----------------------------------------
+// Notification means Claude is waiting on the user mid-turn (a permission
+// prompt or a question). We don't pause for it — pausing there leaves the music
+// silent through whatever runs next — we just flag it so the statusline can
+// show a "your call" signal. Any working event or a pause clears it.
+function setAttention() {
+  try {
+    fs.mkdirSync(stateDir(), { recursive: true });
+    fs.writeFileSync(attentionFile(), String(Date.now()));
+  } catch {
+    /* best-effort */
+  }
+}
+
+function clearAttention() {
+  try {
+    fs.unlinkSync(attentionFile());
+  } catch {
+    /* already clear */
+  }
+}
+
+// True while a recent Notification is unanswered (capped so a stale flag can't
+// stick forever).
+function attentionActive() {
+  try {
+    return Date.now() - Number(fs.readFileSync(attentionFile(), 'utf8').trim()) < 600000;
+  } catch {
+    return false;
+  }
+}
+
+async function attention() {
+  const token = actionToken();
+  log(`action=attention token=${token}`);
+  setAttention();
 }
 
 // Time an async step and log how long it took (for latency diagnosis).
@@ -244,6 +283,7 @@ async function play() {
     log('play: disabled flag set, skipping');
     return;
   }
+  clearAttention(); // Claude is working again
   recordIntent(token, 'play');
   const t0 = Date.now();
   recordActivity();
@@ -291,7 +331,7 @@ async function play() {
     // music swells and eases with how hard the agent is working.
     await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
   }
-  log(`play: done in ${Date.now() - t0}ms`);
+  log(`play: done in ${Date.now() - t0}ms -> audio mute=${await getProp('mute')}`);
   ensureWatchdog();
 }
 
@@ -305,6 +345,7 @@ async function pause() {
   const token = actionToken();
   const t0 = Date.now();
   log(`action=pause token=${token}`);
+  clearAttention(); // it's the user's turn now, not a mid-turn prompt
   recordIntent(token, 'pause');
   const live = await timed('alive-check', () => alive());
   if (!live) {
@@ -315,7 +356,7 @@ async function pause() {
   // instant Claude asks, and keep the stream flowing so the next play is
   // immediate. The watchdog hard-pauses after the idle timeout.
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
-  log(`pause: done in ${Date.now() - t0}ms`);
+  log(`pause: done in ${Date.now() - t0}ms -> audio mute=${await getProp('mute')}`);
   ensureWatchdog();
 }
 
@@ -454,6 +495,8 @@ module.exports = {
   play,
   pause,
   hardPause,
+  attention,
+  attentionActive,
   radio,
   next,
   setVolume,

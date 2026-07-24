@@ -301,7 +301,13 @@ async function main() {
     const stops = theme.stops || DEFAULT_THEME.stops;
     let head;
     let headLen;
-    if (moving) {
+    if (moving && controller.attentionActive()) {
+      // Playing, but Claude is waiting on you mid-turn (a yes/no or a question).
+      // Keep the music going and signal it visually instead of pausing.
+      const label = 'your call';
+      head = `${paint('⏳', 236, 200, 64, true)} ${paint(label, 236, 210, 120, true)}`;
+      headLen = 2 + label.length; // hourglass + space + label
+    } else if (moving) {
       // ► + live track/station title, tinted to the station theme.
       const title = marquee(await displayTitle(), TITLE_MAX);
       const [tr, tg, tb] = gradientColor(stops, 0.9);

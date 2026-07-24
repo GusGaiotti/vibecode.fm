@@ -33,7 +33,7 @@ async function main() {
   const event = process.argv[3];
   // Stamp when the hook fired so racing events serialize by real order.
   if (!process.env.VIBECODE_TOKEN) process.env.VIBECODE_TOKEN = String(Date.now());
-  if (['play', 'pause'].includes(action)) {
+  if (['play', 'pause', 'attention'].includes(action)) {
     log(action, `from ${event || '?'} (token ${process.env.VIBECODE_TOKEN})`);
   }
   const controller = require('../src/controller');
@@ -43,6 +43,9 @@ async function main() {
       break;
     case 'pause':
       await controller.pause();
+      break;
+    case 'attention':
+      await controller.attention();
       break;
     case 'status':
       process.stdout.write(await controller.status());

@@ -296,13 +296,17 @@ test('lastActivityMs tracks the newest play event', async () => {
   assert.ok(last >= before && last <= Date.now(), 'stamp is from this play');
 });
 
-test('watchdog hard-pauses idle players, holding a muted one much longer', () => {
-  const { shouldPause } = require('../src/watchdog');
-  const limit = 120000;
-  assert.strictEqual(shouldPause('►', 121000, limit), true, 'playing + idle: pause');
-  assert.strictEqual(shouldPause('►', 5000, limit), false, 'playing + fresh: keep');
-  // A muted player (waiting on the user) stays warm until the 8x hold window.
-  assert.strictEqual(shouldPause('❚❚', 121000, limit), false, 'muted + short idle: keep warm');
-  assert.strictEqual(shouldPause('❚❚', limit * 8 + 1, limit), true, 'muted + very long idle: stop');
-  assert.strictEqual(shouldPause('', 999999999, limit), false, 'no player: nothing to do');
+test('watchdog soft-pauses an idle playing player, hard-stops a long-muted one', () => {
+  const { shouldSoftPause, shouldHardStop, ABANDON_MULTIPLIER } = require('../src/watchdog');
+  const limit = 20000;
+  // Playing but idle past the window = Claude stopped without a Stop hook.
+  assert.strictEqual(shouldSoftPause('►', 21000, limit), true, 'playing + idle: soft pause');
+  assert.strictEqual(shouldSoftPause('►', 5000, limit), false, 'playing + fresh: keep');
+  assert.strictEqual(shouldSoftPause('❚❚', 999999, limit), false, 'muted: not a soft-pause case');
+  // Muted stays warm until the long abandon window, then the stream stops.
+  assert.strictEqual(shouldHardStop('❚❚', 21000, limit), false, 'muted + short: keep warm');
+  assert.strictEqual(
+    shouldHardStop('❚❚', limit * ABANDON_MULTIPLIER + 1, limit), true, 'muted + abandoned: stop'
+  );
+  assert.strictEqual(shouldHardStop('►', 999999, limit), false, 'playing: not a hard-stop case');
 });

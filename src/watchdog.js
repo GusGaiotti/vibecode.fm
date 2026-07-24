@@ -18,7 +18,7 @@ const fs = require('fs');
 const controller = require('./controller');
 const { stateDir, watchdogFile, logFile, debugEnabled } = require('./paths');
 
-const TICK_MS = 15000;
+const TICK_MS = 5000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -34,22 +34,28 @@ function log(message) {
 
 function idleTimeoutMs() {
   const seconds = Number(process.env.VIBECODE_IDLE_TIMEOUT);
-  return (seconds > 0 ? seconds : 120) * 1000;
+  // Short by design: this is the safety net that pauses when Claude stops
+  // without a Stop hook (Ctrl+C, a rejected tool, an abandoned turn). Working
+  // turns keep it awake with a play event every few seconds.
+  return (seconds > 0 ? seconds : 20) * 1000;
 }
 
 // A soft-paused (muted) player keeps its stream warm so resume is instant, but
 // it shouldn't download forever. Give it much longer than a live/aborted turn
 // so answering a question or a permission prompt — even a slow one — still
 // resumes instantly; only a truly abandoned session hits the hard pause.
-const WARM_HOLD_MULTIPLIER = 8; // 8 * 120s = 16min warm before the stream stops
+const ABANDON_MULTIPLIER = 15; // muted this many idle windows => stop the stream
 
-// Pure decision, unit-tested: hard-pause a PLAYING player that has gone idle
-// (a turn that died without a Stop hook), or a MUTED one only after the much
-// longer warm-hold window.
-function shouldPause(status, idleMs, limitMs) {
-  if (status === '►') return idleMs >= limitMs;
-  if (status === '❚❚') return idleMs >= limitMs * WARM_HOLD_MULTIPLIER;
-  return false;
+// Pure decisions, unit-tested. A PLAYING player idle past the window means
+// Claude stopped without a Stop hook (Ctrl+C, rejected tool, abandoned turn):
+// soft-pause it. A MUTED player idle far longer is truly abandoned: stop the
+// stream so it doesn't download forever.
+function shouldSoftPause(status, idleMs, limitMs) {
+  return status === '►' && idleMs >= limitMs;
+}
+
+function shouldHardStop(status, idleMs, limitMs) {
+  return status === '❚❚' && idleMs >= limitMs * ABANDON_MULTIPLIER;
 }
 
 function beat() {
@@ -81,17 +87,22 @@ async function run() {
       return cleanup();
     }
     const idleMs = Date.now() - controller.lastActivityMs();
-    if (shouldPause(status, idleMs, idleTimeoutMs())) {
-      // Either a turn died playing without a Stop hook, or a muted player sat
-      // idle past the warm-hold window: silence AND stop the stream for real.
-      log(`idle ${Math.round(idleMs / 1000)}s (${status}), hard-pausing`);
+    const limit = idleTimeoutMs();
+    if (shouldSoftPause(status, idleMs, limit)) {
+      // Claude stopped without a Stop hook — silence, but keep the stream warm
+      // so the next message resumes instantly. Keep watching.
+      log(`idle ${Math.round(idleMs / 1000)}s while playing -> soft pause`);
+      await controller.pause();
+    } else if (shouldHardStop(status, idleMs, limit)) {
+      // Muted and long abandoned: stop the download. Next play respawns us.
+      log(`idle ${Math.round(idleMs / 1000)}s while muted -> stop stream`);
       await controller.hardPause();
       return cleanup();
     }
   }
 }
 
-module.exports = { shouldPause, TICK_MS };
+module.exports = { shouldSoftPause, shouldHardStop, ABANDON_MULTIPLIER, TICK_MS };
 
 if (require.main === module) {
   run().catch(() => cleanup());
