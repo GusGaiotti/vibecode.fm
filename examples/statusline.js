@@ -1,55 +1,119 @@
 #!/usr/bin/env node
 'use strict';
 
-// Example Claude Code statusline.
-// - While the agent works (►): a full-width equalizer whose COLOUR tracks how
-//   hard the agent is working (green = light, amber/orange = medium, red = heavy).
-//   The bar heights shift each repaint to feel alive; they are not synced to the
-//   audio waveform (the statusline can't repaint fast enough for that).
-// - While it's your turn (❚❚): model on the left, track on the right.
+// Example Claude Code statusline for vibecode.fm.
+//
+//   ▶ playing : icon + track/station on the left, a VU-meter equalizer in the
+//               middle with musical notes drifting across it, model dimmed on
+//               the right. The gradient adopts the current station's theme
+//               (DEF CON = matrix green, Underground 80s = synthwave, ...).
+//   ▮▮ paused : solid pause icon + track on the left, a dim "breathing" line.
+//   idle      : just the model name.
+//
+// Honest note: the bars are NOT synced to the audio waveform — the statusline
+// repaints on Claude Code's cadence (~300ms at best), far too slow for a real
+// spectrum. Heights come from layered sines plus a little jitter, and the
+// notes drift deterministically with time, which reads as "alive" without
+// pretending to be an analyzer. Colour does carry meaning: bars glow hotter
+// the taller they are, and the whole meter grows with how hard the agent is
+// working (activityLevel).
+//
 // Point settings.json at it:
 //   "statusLine": { "type": "command", "command": "node /path/to/examples/statusline.js" }
 
 const path = require('path');
 const controller = require(path.join(__dirname, '..', 'src', 'controller'));
 
+// ---- ANSI helpers (truecolor) ------------------------------------------------
+const RESET = '\x1b[0m';
+const BOLD = '\x1b[1m';
+const fg = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;
+const paint = (s, r, g, b, bold) => `${bold ? BOLD : ''}${fg(r, g, b)}${s}${RESET}`;
+
+// ---- Equalizer ---------------------------------------------------------------
 const BLOCKS = [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+const NOTES = ['♪', '♫', '♬', '♩', '✦'];
 
-// Green -> yellow -> orange -> red, deliberately routed through orange so the
-// mid-range transition is warm, not a hard yellow-to-red jump.
-const STOPS = [
-  { p: 0.0, c: [80, 200, 100] },
-  { p: 0.4, c: [235, 200, 60] },
-  { p: 0.7, c: [240, 140, 40] },
-  { p: 1.0, c: [220, 55, 45] },
-];
+// Default VU gradient by bar height: calm teal low, hot red peaks. Stations
+// with their own theme (src/stations.js) override this.
+const DEFAULT_THEME = {
+  stops: [
+    { p: 0.0, c: [64, 208, 190] }, // teal
+    { p: 0.3, c: [90, 220, 110] }, // green
+    { p: 0.55, c: [232, 205, 60] }, // yellow
+    { p: 0.78, c: [242, 140, 42] }, // orange
+    { p: 1.0, c: [228, 60, 58] }, // red
+  ],
+  note: [255, 122, 194], // pink pop
+};
 
-function colorFor(t) {
+function gradientColor(stops, t) {
   const x = Math.max(0, Math.min(1, t));
-  for (let i = 1; i < STOPS.length; i += 1) {
-    if (x <= STOPS[i].p) {
-      const a = STOPS[i - 1];
-      const b = STOPS[i];
+  for (let i = 1; i < stops.length; i += 1) {
+    if (x <= stops[i].p) {
+      const a = stops[i - 1];
+      const b = stops[i];
       const k = (x - a.p) / (b.p - a.p);
       return a.c.map((ch, j) => Math.round(ch + (b.c[j] - ch) * k));
     }
   }
-  return STOPS[STOPS.length - 1].c;
+  return stops[stops.length - 1].c;
 }
 
-function equalizer(cols, intensity) {
-  const t = Date.now() / 120;
-  let bars = '';
-  for (let i = 0; i < cols; i += 1) {
-    const wave = (Math.sin(t * 0.7 + i * 0.6) + Math.sin(t * 1.3 + i * 0.9)) / 2;
-    let h = (wave + 1) / 2; // 0..1
-    h = 0.15 + 0.85 * h * (0.35 + 0.65 * intensity); // taller when busier
-    bars += BLOCKS[Math.max(1, Math.min(8, 1 + Math.round(h * 7)))];
+// Note "particles" that drift smoothly across the meter (position is a pure
+// function of time, so consecutive repaints slide instead of teleporting).
+function notePositions(cols, intensity, t) {
+  const count = Math.min(cols >> 3, 2 + Math.round(3 * intensity));
+  const positions = new Map();
+  for (let k = 0; k < count; k += 1) {
+    const speed = 0.8 + k * 0.35; // cells per time unit, one lane per particle
+    const offset = k * 37.7; // spread lanes out
+    const pos = Math.floor(offset + t * speed) % cols;
+    const glyph = NOTES[(k + Math.floor(t / 9)) % NOTES.length];
+    positions.set((pos + cols) % cols, glyph);
   }
-  const [r, g, b] = colorFor(intensity);
-  return `\x1b[38;2;${r};${g};${b}m${bars}\x1b[0m`;
+  return positions;
 }
 
+function equalizer(cols, intensity, theme) {
+  const t = Date.now() / 110;
+  const notes = notePositions(cols, intensity, t / 4);
+  let out = '';
+  for (let i = 0; i < cols; i += 1) {
+    const note = notes.get(i);
+    if (note) {
+      const [r, g, b] = theme.note;
+      out += paint(note, r, g, b, true);
+      continue;
+    }
+    // Layered sines (a "spectrum" shape) plus light jitter per repaint.
+    const wave =
+      (Math.sin(t * 0.7 + i * 0.6) +
+        Math.sin(t * 1.3 + i * 0.9) +
+        (Math.random() - 0.5) * 0.4) /
+      2;
+    let h = (wave + 1) / 2; // 0..1
+    h = 0.12 + 0.88 * h * (0.4 + 0.6 * intensity); // taller when busier
+    h = Math.max(0, Math.min(1, h));
+    const block = BLOCKS[Math.max(1, Math.min(8, 1 + Math.round(h * 7)))];
+    const [r, g, b] = gradientColor(theme.stops, h);
+    out += fg(r, g, b) + block + RESET;
+  }
+  return out;
+}
+
+// Slow, dim breathing line for the paused state.
+function breathe(cols) {
+  const t = Date.now() / 500;
+  let out = '';
+  for (let i = 0; i < cols; i += 1) {
+    const wave = (Math.sin(t * 0.6 + i * 0.5) + 1) / 2;
+    out += fg(88, 98, 112) + (wave > 0.62 ? '▂' : '▁') + RESET;
+  }
+  return out;
+}
+
+// ---- Layout ------------------------------------------------------------------
 function readStdin() {
   return new Promise((resolve) => {
     let data = '';
@@ -57,6 +121,15 @@ function readStdin() {
     process.stdin.on('end', () => resolve(data));
     setTimeout(() => resolve(data), 200);
   });
+}
+
+// The best label to show right now: the live "Artist – Track" if it has arrived
+// (a real title has spaces), otherwise the friendly station name, so the ugly
+// stream slug (e.g. "groovesalad-128-mp3") never shows.
+async function displayTitle() {
+  const raw = await controller.track();
+  if (raw && /\s/.test(raw)) return raw.slice(0, 40);
+  return controller.stationLabel() || 'vibecode.fm';
 }
 
 async function main() {
@@ -71,18 +144,21 @@ async function main() {
 
   const width = Number(process.env.COLUMNS) || 80;
   const icon = await controller.status();
-  let out = model;
+  let out = paint(model, 150, 158, 168); // idle: just the model, dimmed
 
   if (icon === '►') {
-    const title = (await controller.track()) || 'vibecode.fm';
-    const prefix = `♫ ${title} `;
-    const cols = Math.max(4, width - prefix.length);
-    out = prefix + equalizer(cols, controller.activityLevel());
+    const title = await displayTitle();
+    const theme = controller.stationTheme() || DEFAULT_THEME;
+    const left = `▶ ${title}`;
+    const mid = Math.max(6, width - left.length - model.length - 2);
+    const head = paint('▶', 90, 222, 120, true) + ' ' + paint(title, 228, 232, 238, true);
+    out = `${head} ${equalizer(mid, controller.activityLevel(), theme)} ${paint(model, 120, 128, 140)}`;
   } else if (icon === '❚❚') {
-    const title = (await controller.track()) || 'vibecode.fm';
-    const right = `❚❚ ${title}`;
-    const pad = Math.max(1, width - model.length - right.length);
-    out = `${model}${' '.repeat(pad)}${right}`;
+    const title = await displayTitle();
+    const left = `▮▮ ${title}`;
+    const mid = Math.max(6, width - left.length - model.length - 2);
+    const head = paint('▮▮', 236, 200, 64, true) + ' ' + paint(title, 176, 182, 190);
+    out = `${head} ${breathe(mid)} ${paint(model, 120, 128, 140)}`;
   }
 
   process.stdout.write(out);

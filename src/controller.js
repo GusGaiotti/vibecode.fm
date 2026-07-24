@@ -34,6 +34,23 @@ function log(message) {
 const volume = () => Number(process.env.VIBECODE_VOLUME) || 70;
 const isDisabled = () => fs.existsSync(disabledFlag());
 
+const ADAPTIVE_SPREAD = 15;
+
+// Map processing intensity (0..1) to a volume around the base: lighter work
+// plays quieter, heavier work louder, bounded to +/- ADAPTIVE_SPREAD.
+function adaptiveVolume(base, level) {
+  const v = Math.round(base - ADAPTIVE_SPREAD + 2 * ADAPTIVE_SPREAD * level);
+  return Math.max(0, Math.min(100, v));
+}
+
+// The volume a play should aim for. Opt-in: only tracks intensity when
+// VIBECODE_ADAPTIVE is set, otherwise it's the plain configured volume.
+function targetVolume() {
+  const base = volume();
+  if (!process.env.VIBECODE_ADAPTIVE) return base;
+  return adaptiveVolume(base, activityLevel());
+}
+
 // Source precedence: explicit env > station chosen via `radio` > bundled default.
 function source() {
   if (process.env.VIBECODE_SOURCE) return process.env.VIBECODE_SOURCE;
@@ -114,11 +131,15 @@ async function play() {
       return;
     }
   }
-  // Only fade in on a real paused->playing transition, not on every tool call.
   if (wasPaused) {
+    // Real paused->playing transition: fade in to the target volume.
     await send(ipcPath(), { command: ['set_property', 'volume', 0] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    await fadeTo(volume());
+    await fadeTo(targetVolume());
+  } else if (process.env.VIBECODE_ADAPTIVE) {
+    // Already playing: nudge the volume toward the current intensity so the
+    // music swells and eases with how hard the agent is working.
+    await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
   }
 }
 
@@ -144,9 +165,9 @@ async function radio(vibe) {
     await send(ipcPath(), { command: ['loadfile', url] });
     await send(ipcPath(), { command: ['set_property', 'volume', 0] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    await fadeTo(volume());
+    await fadeTo(targetVolume());
   } else {
-    await start(url, volume());
+    await start(url, targetVolume());
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
   }
 }
@@ -163,6 +184,29 @@ async function track() {
   const reply = await send(ipcPath(), { command: ['get_property', 'media-title'] });
   if (!reply || reply.error !== 'success' || !reply.data) return '';
   return String(reply.data).replace(/\s+/g, ' ').trim().slice(0, 48);
+}
+
+// Friendly name of the station currently selected via `radio`, e.g.
+// "Groove Salad · SomaFM". Null when on the bundled default or a custom source.
+// Used by the statusline as an instant label before the live title loads.
+function stationLabel() {
+  try {
+    const saved = fs.readFileSync(stationFile(), 'utf8').trim();
+    const name = stations.label(saved);
+    if (name) return `${name} · SomaFM`;
+  } catch {
+    /* no station chosen */
+  }
+  return null;
+}
+
+// Equalizer colour theme of the current station (null = statusline default).
+function stationTheme() {
+  try {
+    return stations.theme(fs.readFileSync(stationFile(), 'utf8').trim());
+  } catch {
+    return null;
+  }
 }
 
 function on() {
@@ -199,5 +243,8 @@ module.exports = {
   on,
   off,
   activityLevel,
+  adaptiveVolume,
+  stationLabel,
+  stationTheme,
   stationNames: stations.names,
 };

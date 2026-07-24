@@ -163,3 +163,25 @@ test('stationNames exposes the curated vibes', () => {
   const names = controller.stationNames();
   assert.ok(names.includes('lofi') && names.includes('metal') && names.includes('rock'));
 });
+
+test('adaptiveVolume scales around the base with intensity and clamps', () => {
+  assert.strictEqual(controller.adaptiveVolume(70, 0), 55); // light: base - spread
+  assert.strictEqual(controller.adaptiveVolume(70, 0.5), 70); // medium: base
+  assert.strictEqual(controller.adaptiveVolume(70, 1), 85); // heavy: base + spread
+  assert.strictEqual(controller.adaptiveVolume(95, 1), 100); // clamped at 100
+  assert.strictEqual(controller.adaptiveVolume(10, 0), 0); // clamped at 0
+});
+
+test('stationLabel and stationTheme follow the chosen station', async () => {
+  assert.strictEqual(controller.stationLabel(), null, 'no station chosen yet');
+  assert.strictEqual(controller.stationTheme(), null);
+  await withPlayer(async () => {
+    await controller.radio('hacker');
+    assert.strictEqual(controller.stationLabel(), 'DEF CON Radio · SomaFM');
+    const theme = controller.stationTheme();
+    assert.ok(theme && Array.isArray(theme.stops) && theme.note, 'themed station');
+    await controller.radio('chill');
+    assert.strictEqual(controller.stationLabel(), 'Groove Salad · SomaFM');
+    assert.strictEqual(controller.stationTheme(), null, 'default theme station');
+  });
+});
