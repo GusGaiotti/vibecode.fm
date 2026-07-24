@@ -61,6 +61,13 @@ function buildArgs(source, volume) {
     '--cache=yes',
     '--demuxer-max-bytes=1MiB',
     '--demuxer-readahead-secs=20',
+    // Keep the audio device engaged during silence. Receivers, HDMI outputs and
+    // Bluetooth headsets go into standby when a stream goes quiet and take
+    // several seconds to wake up — which shows up as a long silent gap on
+    // resume even though mpv is already playing. Streaming continuous silence
+    // holds the device open so resume is instant.
+    '--audio-stream-silence=yes',
+    '--audio-wait-open=1',
     `--volume=${volume}`,
     '--pause',
     `--input-ipc-server=${ipcPath()}`,
