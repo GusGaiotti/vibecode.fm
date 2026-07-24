@@ -140,6 +140,31 @@ function breathe(cols) {
   return out;
 }
 
+// Long titles scroll through a fixed window instead of being cut off.
+const TITLE_MAX = 34;
+
+function marquee(text, max) {
+  if (text.length <= max) return text;
+  const loop = `${text}  ♪  `;
+  const offset = Math.floor(Date.now() / 400) % loop.length;
+  return (loop + loop).slice(offset, offset + max);
+}
+
+// Tint the model name by family — a subtle identity cue on the right edge.
+const MODEL_TINTS = [
+  [/opus/i, [178, 140, 255]],
+  [/sonnet/i, [120, 170, 255]],
+  [/haiku/i, [120, 220, 150]],
+  [/fable/i, [255, 200, 110]],
+];
+
+function modelColor(model) {
+  for (const [re, c] of MODEL_TINTS) {
+    if (re.test(model)) return c;
+  }
+  return [150, 158, 168];
+}
+
 // ---- Layout ------------------------------------------------------------------
 function readStdin() {
   return new Promise((resolve) => {
@@ -155,7 +180,7 @@ function readStdin() {
 // stream slug (e.g. "groovesalad-128-mp3") never shows.
 async function displayTitle() {
   const raw = await controller.track();
-  if (raw && /\s/.test(raw)) return raw.slice(0, 40);
+  if (raw && /\s/.test(raw)) return raw;
   return controller.stationLabel() || 'vibecode.fm';
 }
 
@@ -171,21 +196,22 @@ async function main() {
 
   const width = Number(process.env.COLUMNS) || 80;
   const icon = await controller.status();
-  let out = paint(model, 150, 158, 168); // idle: just the model, dimmed
+  const [mr, mg, mb] = modelColor(model);
+  let out = paint(model, mr, mg, mb); // idle: just the model, tinted
 
   if (icon === '►') {
-    const title = await displayTitle();
+    const title = marquee(await displayTitle(), TITLE_MAX);
     const theme = controller.stationTheme() || DEFAULT_THEME;
     const left = `▶ ${title}`;
     const mid = Math.max(6, width - left.length - model.length - 2);
     const head = paint('▶', 90, 222, 120, true) + ' ' + paint(title, 228, 232, 238, true);
-    out = `${head} ${equalizer(mid, controller.activityLevel(), theme)} ${paint(model, 120, 128, 140)}`;
+    out = `${head} ${equalizer(mid, controller.activityLevel(), theme)} ${paint(model, mr, mg, mb)}`;
   } else if (icon === '❚❚') {
-    const title = await displayTitle();
+    const title = marquee(await displayTitle(), TITLE_MAX);
     const left = `▮▮ ${title}`;
     const mid = Math.max(6, width - left.length - model.length - 2);
     const head = paint('▮▮', 236, 200, 64, true) + ' ' + paint(title, 176, 182, 190);
-    out = `${head} ${breathe(mid)} ${paint(model, 120, 128, 140)}`;
+    out = `${head} ${breathe(mid)} ${paint(model, mr, mg, mb)}`;
   }
 
   process.stdout.write(out);
