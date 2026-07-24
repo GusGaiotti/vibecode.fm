@@ -4,16 +4,31 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { send } = require('./ipc');
-const { ipcPath, stateDir, mpvLogFile } = require('./paths');
+const { ipcPath, stateDir, mpvLogFile, logFile, debugEnabled } = require('./paths');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function log(message) {
+  if (!debugEnabled()) return;
+  try {
+    fs.mkdirSync(stateDir(), { recursive: true });
+    const time = new Date().toISOString().slice(11, 23);
+    fs.appendFileSync(logFile(), `${time} pid=${process.pid} ${message}\n`);
+  } catch {
+    /* logging must never break anything */
+  }
+}
 
 // Wait for the player behind the socket/pipe to answer, up to ~3s.
 async function waitAlive() {
   for (let i = 0; i < 30; i += 1) {
-    if (await alive()) return true;
+    if (await alive()) {
+      log(`  waitAlive: socket up after ${i * 100}ms`);
+      return true;
+    }
     await sleep(100);
   }
+  log('  waitAlive: TIMED OUT after 3000ms');
   return false;
 }
 
@@ -41,8 +56,8 @@ function buildArgs(source, volume) {
     '--pause',
     `--input-ipc-server=${ipcPath()}`,
   ];
-  if (process.env.VIBECODE_DEBUG) {
-    args.push(`--log-file=${mpvLogFile()}`, '--msg-level=all=info');
+  if (debugEnabled()) {
+    args.push(`--log-file=${mpvLogFile()}`, '--msg-level=all=status');
   }
   // Environment-specific flags, e.g. VIBECODE_MPV_ARGS="--ao=pulse" on WSL.
   if (process.env.VIBECODE_MPV_ARGS) {
@@ -83,13 +98,14 @@ async function start(source, volume) {
     }
   }
   try {
+    log(`  start: spawning mpv (${mpvBin()}) source=${source}`);
     const child = spawn(mpvBin(), buildArgs(source, volume), {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
     });
     // mpv missing (ENOENT) surfaces here; swallow so nothing crashes.
-    child.on('error', () => {});
+    child.on('error', (e) => log(`  start: spawn error ${e && e.code}`));
     child.unref();
     return await waitAlive();
   } catch {

@@ -16,14 +16,14 @@
 
 const fs = require('fs');
 const controller = require('./controller');
-const { stateDir, watchdogFile, logFile } = require('./paths');
+const { stateDir, watchdogFile, logFile, debugEnabled } = require('./paths');
 
 const TICK_MS = 15000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function log(message) {
-  if (!process.env.VIBECODE_DEBUG) return;
+  if (!debugEnabled()) return;
   try {
     const time = new Date().toISOString().slice(11, 19);
     fs.appendFileSync(logFile(), `${time} pid=${process.pid} watchdog: ${message}\n`);

@@ -14,6 +14,7 @@ const {
   stationFile,
   activityFile,
   watchdogFile,
+  debugEnabled,
   defaultSource,
 } = require('./paths');
 
@@ -24,14 +25,22 @@ const ACTIVITY_WINDOW_MS = 8000;
 const ACTIVITY_MAX = 6; // events in the window that count as "full intensity"
 
 function log(message) {
-  if (!process.env.VIBECODE_DEBUG) return;
+  if (!debugEnabled()) return;
   try {
     fs.mkdirSync(stateDir(), { recursive: true });
-    const time = new Date().toISOString().slice(11, 19);
+    const time = new Date().toISOString().slice(11, 23); // HH:MM:SS.mmm
     fs.appendFileSync(logFile(), `${time} pid=${process.pid} ${message}\n`);
   } catch {
     /* logging must never break anything */
   }
+}
+
+// Time an async step and log how long it took (for latency diagnosis).
+async function timed(label, fn) {
+  const t0 = Date.now();
+  const result = await fn();
+  log(`  ${label}: ${Date.now() - t0}ms`);
+  return result;
 }
 
 const volume = () => Number(process.env.VIBECODE_VOLUME) || 70;
@@ -185,15 +194,17 @@ async function play() {
     log('play: disabled flag set, skipping');
     return;
   }
+  const t0 = Date.now();
   recordActivity();
   let wasHalted = true;
-  if (await alive()) {
+  const live = await timed('alive-check', () => alive());
+  if (live) {
     wasHalted = (await isHalted()) !== false;
-    log('play: player already alive, resuming');
+    log(`play: player already alive, resuming (wasHalted=${wasHalted})`);
   } else {
-    log('play: no live player, starting one');
-    if (!(await start(source(), volume()))) {
-      log('play: player did not come up');
+    log('play: no live player, COLD START');
+    if (!(await timed('cold-start', () => start(source(), volume())))) {
+      log(`play: player did not come up (total ${Date.now() - t0}ms)`);
       return;
     }
   }
@@ -203,12 +214,13 @@ async function play() {
     const target = targetVolume();
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    await fade(Math.round(target / 2), target);
+    await timed('fade-in', () => fade(Math.round(target / 2), target));
   } else if (adaptiveEnabled()) {
     // Already playing: nudge the volume toward the current intensity so the
     // music swells and eases with how hard the agent is working.
     await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
   }
+  log(`play: done in ${Date.now() - t0}ms`);
   ensureWatchdog();
 }
 
@@ -219,8 +231,10 @@ async function fadeOut() {
 }
 
 async function pause() {
+  const t0 = Date.now();
   log('action=pause');
-  if (!(await alive())) {
+  const live = await timed('alive-check', () => alive());
+  if (!live) {
     log('pause: no live player, nothing to do');
     return;
   }
@@ -228,6 +242,7 @@ async function pause() {
   // instant Claude asks, and keep the stream flowing so the next play is
   // immediate. The watchdog hard-pauses after the idle timeout.
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
+  log(`pause: done in ${Date.now() - t0}ms`);
   ensureWatchdog();
 }
 

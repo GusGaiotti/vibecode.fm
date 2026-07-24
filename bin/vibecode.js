@@ -29,12 +29,27 @@ function detach() {
   }
 }
 
+function log(action, message) {
+  const { stateDir, logFile, debugEnabled } = require('../src/paths');
+  if (!debugEnabled()) return;
+  try {
+    const fs = require('fs');
+    fs.mkdirSync(stateDir(), { recursive: true });
+    const time = new Date().toISOString().slice(11, 23);
+    fs.appendFileSync(logFile(), `${time} pid=${process.pid} bin[${action}] ${message}\n`);
+  } catch {
+    /* logging must never break anything */
+  }
+}
+
 async function main() {
   const action = process.argv[2];
   if (DETACHED_ACTIONS.has(action) && !process.env.VIBECODE_DIRECT) {
+    log(action, 'hook fired -> detaching');
     detach();
     return;
   }
+  if (DETACHED_ACTIONS.has(action)) log(action, 'detached child running');
   const controller = require('../src/controller');
   switch (action) {
     case 'play':

@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
@@ -33,6 +34,18 @@ function logFile() {
   return process.env.VIBECODE_LOG || path.join(stateDir(), 'vibecode.log');
 }
 
+// Debug logging is on when VIBECODE_DEBUG is set OR a `debug` flag file exists
+// in the state dir. The flag lets a running session start logging without the
+// hooks inheriting a new env var (which would need a restart).
+function debugEnabled() {
+  if (process.env.VIBECODE_DEBUG) return true;
+  try {
+    return fs.existsSync(path.join(stateDir(), 'debug'));
+  } catch {
+    return false;
+  }
+}
+
 function mpvLogFile() {
   return path.join(stateDir(), 'mpv.log');
 }
@@ -63,6 +76,7 @@ module.exports = {
   ipcPath,
   disabledFlag,
   logFile,
+  debugEnabled,
   mpvLogFile,
   stationFile,
   activityFile,
