@@ -233,17 +233,14 @@ async function track() {
 }
 
 // Friendly name of the station currently selected via `radio`, e.g.
-// "Groove Salad · SomaFM". Null when on the bundled default or a custom source.
-// Used by the statusline as an instant label before the live title loads.
+// "Groove Salad · SomaFM". Null when on the bundled default or an unknown
+// source. Used by the statusline as an instant label before the live title.
 function stationLabel() {
   try {
-    const saved = fs.readFileSync(stationFile(), 'utf8').trim();
-    const name = stations.label(saved);
-    if (name) return `${name} · SomaFM`;
+    return stations.label(fs.readFileSync(stationFile(), 'utf8').trim());
   } catch {
-    /* no station chosen */
+    return null;
   }
-  return null;
 }
 
 // Equalizer colour theme of the current station (null = statusline default).

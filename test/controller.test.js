@@ -73,6 +73,7 @@ afterEach(() => {
   delete process.env.VIBECODE_STATE_DIR;
   delete process.env.VIBECODE_IPC_PATH;
   delete process.env.VIBECODE_NO_WATCHDOG;
+  delete process.env.VIBECODE_STATIONS;
 });
 
 function withPlayer(fn) {
@@ -188,6 +189,36 @@ test('stationLabel and stationTheme follow the chosen station', async () => {
     assert.strictEqual(controller.stationLabel(), 'Groove Salad · SomaFM');
     assert.strictEqual(controller.stationTheme(), null, 'default theme station');
   });
+});
+
+test('custom stations from a user file extend the built-ins', async () => {
+  const file = path.join(sandbox, 'stations.json');
+  fs.writeFileSync(
+    file,
+    JSON.stringify({
+      focus: {
+        url: 'https://example.com/focus.mp3',
+        label: 'Focus FM',
+        theme: { stops: [{ p: 0, c: [1, 2, 3] }], note: [9, 9, 9] },
+      },
+      plain: 'https://example.com/plain.mp3',
+      broken: { nope: true },
+    })
+  );
+  process.env.VIBECODE_STATIONS = file;
+  for (const key of Object.keys(require.cache)) {
+    if (key.includes(`${path.sep}src${path.sep}`)) delete require.cache[key];
+  }
+  controller = require('../src/controller');
+  const names = controller.stationNames();
+  assert.ok(names.includes('focus') && names.includes('plain'), 'custom names listed');
+  assert.ok(!names.includes('broken'), 'malformed entry ignored');
+  await withPlayer(async () => {
+    await controller.radio('focus');
+  });
+  assert.strictEqual(controller.stationLabel(), 'Focus FM', 'custom label, no suffix');
+  assert.deepStrictEqual(controller.stationTheme().note, [9, 9, 9], 'custom theme');
+  delete process.env.VIBECODE_STATIONS;
 });
 
 test('lastActivityMs tracks the newest play event', async () => {

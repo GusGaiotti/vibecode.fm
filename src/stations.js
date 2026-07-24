@@ -1,5 +1,9 @@
 'use strict';
 
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
 // Curated SomaFM stations (free, legal, no login) mapped to moods. Several
 // aliases point at the same channel so `/vibecode-fm:radio rock` and
 // `... indie` both work.
@@ -175,25 +179,67 @@ const THEMES = {
   },
 };
 
+// Users can add their own stations — and optionally a label and an equalizer
+// theme — in ~/.vibecode-fm/stations.json (or the file VIBECODE_STATIONS
+// points at). Entries are either a plain URL string or an object:
+//   { "focus": "https://stream.example/focus.mp3",
+//     "night": { "url": "https://...", "label": "Night Drive",
+//                "theme": { "stops": [{ "p": 0, "c": [80, 80, 180] }],
+//                           "note": [200, 200, 255] } } }
+// Custom names win over built-ins; malformed entries are ignored — user
+// content must never break the plugin.
+function customFile() {
+  return (
+    process.env.VIBECODE_STATIONS ||
+    path.join(os.homedir(), '.vibecode-fm', 'stations.json')
+  );
+}
+
+let customCache = null;
+
+function custom() {
+  if (customCache) return customCache;
+  const out = { stations: {}, labels: {}, themes: {} };
+  try {
+    const raw = JSON.parse(fs.readFileSync(customFile(), 'utf8'));
+    for (const [name, entry] of Object.entries(raw)) {
+      const url = typeof entry === 'string' ? entry : entry && entry.url;
+      if (typeof url !== 'string' || !url) continue;
+      out.stations[name.toLowerCase()] = url;
+      if (entry && typeof entry === 'object') {
+        if (typeof entry.label === 'string') out.labels[url] = entry.label;
+        const t = entry.theme;
+        if (t && Array.isArray(t.stops) && Array.isArray(t.note)) out.themes[url] = t;
+      }
+    }
+  } catch {
+    /* no custom file or bad json: built-ins only */
+  }
+  customCache = out;
+  return out;
+}
+
 function resolve(name) {
   if (!name) return null;
-  return STATIONS[name.toLowerCase()] || null;
+  const key = name.toLowerCase();
+  return custom().stations[key] || STATIONS[key] || null;
 }
 
 function names() {
-  return Object.keys(STATIONS);
+  return [...new Set([...Object.keys(STATIONS), ...Object.keys(custom().stations)])];
 }
 
-// Friendly name for a station URL, or null if it isn't one of ours.
+// Display-ready name for a station URL, or null if it isn't a known one.
 function label(url) {
   if (!url) return null;
-  return LABELS[url] || null;
+  if (custom().labels[url]) return custom().labels[url];
+  return LABELS[url] ? `${LABELS[url]} · SomaFM` : null;
 }
 
 // Equalizer theme for a station URL, or null to use the default.
 function theme(url) {
   if (!url) return null;
-  return THEMES[url] || null;
+  return custom().themes[url] || THEMES[url] || null;
 }
 
 module.exports = { resolve, names, label, theme };
