@@ -1,11 +1,21 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const { spawn } = require('child_process');
 const { send } = require('./ipc');
 const { ipcPath, stateDir, mpvLogFile } = require('./paths');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Wait for the player behind the socket/pipe to answer, up to ~3s.
+async function waitAlive() {
+  for (let i = 0; i < 30; i += 1) {
+    if (await alive()) return true;
+    await sleep(100);
+  }
+  return false;
+}
 
 function mpvBin() {
   // spawn() resolves mpv.exe via PATHEXT on Windows.
@@ -46,7 +56,24 @@ function buildArgs(source, volume) {
 
 // Launch mpv detached so it outlives the hook process, then wait for the
 // socket to come up. Returns true once the player answers, false otherwise.
+// Hooks run in parallel, so a lock file keeps two of them from racing a
+// second mpv into existence (the loser just waits for the winner's player).
 async function start(source, volume) {
+  const lockFile = path.join(stateDir(), 'starting');
+  try {
+    if (Date.now() - fs.statSync(lockFile).mtimeMs < 10000) {
+      return waitAlive();
+    }
+  } catch {
+    /* no fresh lock: we are the starter */
+  }
+  try {
+    fs.mkdirSync(stateDir(), { recursive: true });
+    fs.writeFileSync(lockFile, String(process.pid));
+  } catch {
+    /* locking is best-effort */
+  }
+
   // On Unix a stale socket file blocks the new server; clear it first.
   if (process.platform !== 'win32') {
     try {
@@ -56,7 +83,6 @@ async function start(source, volume) {
     }
   }
   try {
-    fs.mkdirSync(stateDir(), { recursive: true });
     const child = spawn(mpvBin(), buildArgs(source, volume), {
       detached: true,
       stdio: 'ignore',
@@ -65,15 +91,16 @@ async function start(source, volume) {
     // mpv missing (ENOENT) surfaces here; swallow so nothing crashes.
     child.on('error', () => {});
     child.unref();
+    return await waitAlive();
   } catch {
     return false;
+  } finally {
+    try {
+      fs.unlinkSync(lockFile);
+    } catch {
+      /* already gone */
+    }
   }
-
-  for (let i = 0; i < 30; i += 1) {
-    if (await alive()) return true;
-    await sleep(100);
-  }
-  return false;
 }
 
 module.exports = { alive, start, mpvBin };
