@@ -58,6 +58,8 @@ beforeEach(() => {
       : path.join(sandbox, 'mpv.sock');
   delete process.env.VIBECODE_SOURCE;
   delete process.env.VIBECODE_DEBUG;
+  // Tests must never spawn a real detached watchdog process.
+  process.env.VIBECODE_NO_WATCHDOG = '1';
   // Fresh module state per test so path env is re-read.
   for (const key of Object.keys(require.cache)) {
     if (key.includes(`${path.sep}src${path.sep}`)) delete require.cache[key];
@@ -70,6 +72,7 @@ afterEach(() => {
   fs.rmSync(sandbox, { recursive: true, force: true });
   delete process.env.VIBECODE_STATE_DIR;
   delete process.env.VIBECODE_IPC_PATH;
+  delete process.env.VIBECODE_NO_WATCHDOG;
 });
 
 function withPlayer(fn) {
@@ -185,4 +188,22 @@ test('stationLabel and stationTheme follow the chosen station', async () => {
     assert.strictEqual(controller.stationLabel(), 'Groove Salad · SomaFM');
     assert.strictEqual(controller.stationTheme(), null, 'default theme station');
   });
+});
+
+test('lastActivityMs tracks the newest play event', async () => {
+  assert.strictEqual(controller.lastActivityMs(), 0, 'no activity yet');
+  const before = Date.now();
+  await withPlayer(async () => {
+    await controller.play();
+  });
+  const last = controller.lastActivityMs();
+  assert.ok(last >= before && last <= Date.now(), 'stamp is from this play');
+});
+
+test('watchdog pauses only a playing player past the idle limit', () => {
+  const { shouldPause } = require('../src/watchdog');
+  assert.strictEqual(shouldPause('►', 121000, 120000), true, 'playing + idle: pause');
+  assert.strictEqual(shouldPause('►', 5000, 120000), false, 'playing + fresh: keep');
+  assert.strictEqual(shouldPause('❚❚', 999000, 120000), false, 'paused: nothing to do');
+  assert.strictEqual(shouldPause('', 999000, 120000), false, 'no player: nothing to do');
 });

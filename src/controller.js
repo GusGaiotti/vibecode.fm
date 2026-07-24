@@ -1,6 +1,8 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
 const { send } = require('./ipc');
 const { alive, start } = require('./player');
 const stations = require('./stations');
@@ -11,6 +13,7 @@ const {
   logFile,
   stationFile,
   activityFile,
+  watchdogFile,
   defaultSource,
 } = require('./paths');
 
@@ -113,6 +116,48 @@ function activityLevel() {
   }
 }
 
+// Timestamp of the most recent play event, 0 if none. The watchdog uses this
+// to notice turns that ended without a Stop hook firing.
+function lastActivityMs() {
+  try {
+    const stamps = fs
+      .readFileSync(activityFile(), 'utf8')
+      .split('\n')
+      .map(Number)
+      .filter(Boolean);
+    return stamps.length ? Math.max(...stamps) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+const WATCHDOG_FRESH_MS = 45000; // 3 missed 15s heartbeats = watchdog is gone
+
+// A turn can die without any hook firing (API error, spend-limit abort,
+// Ctrl+C) — no Stop, so nothing pauses the music. The watchdog is a tiny
+// detached process that pauses playback once play events stop arriving.
+// Spawned lazily here; the heartbeat check keeps it a single instance.
+function ensureWatchdog() {
+  if (process.env.VIBECODE_NO_WATCHDOG) return;
+  try {
+    if (Date.now() - fs.statSync(watchdogFile()).mtimeMs < WATCHDOG_FRESH_MS) return;
+  } catch {
+    /* no heartbeat yet: spawn one */
+  }
+  try {
+    const child = spawn(process.execPath, [path.join(__dirname, 'watchdog.js')], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.on('error', () => {});
+    child.unref();
+    log('watchdog: spawned');
+  } catch {
+    /* the watchdog is best-effort */
+  }
+}
+
 async function play() {
   log('action=play');
   if (isDisabled()) {
@@ -141,6 +186,7 @@ async function play() {
     // music swells and eases with how hard the agent is working.
     await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
   }
+  ensureWatchdog();
 }
 
 async function pause() {
@@ -243,6 +289,7 @@ module.exports = {
   on,
   off,
   activityLevel,
+  lastActivityMs,
   adaptiveVolume,
   stationLabel,
   stationTheme,

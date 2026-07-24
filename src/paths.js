@@ -47,6 +47,12 @@ function activityFile() {
   return path.join(stateDir(), 'activity');
 }
 
+// Heartbeat of the idle watchdog (safety net that pauses playback when a turn
+// ends without a Stop hook — API errors, spend-limit aborts, Ctrl+C).
+function watchdogFile() {
+  return path.join(stateDir(), 'watchdog');
+}
+
 // Default audio source: the bundled playlist, resolved from the package root.
 function defaultSource() {
   return path.join(__dirname, '..', 'playlists', 'default.m3u');
@@ -60,5 +66,6 @@ module.exports = {
   mpvLogFile,
   stationFile,
   activityFile,
+  watchdogFile,
   defaultSource,
 };
