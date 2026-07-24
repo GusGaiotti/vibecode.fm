@@ -137,3 +137,29 @@ test('off writes the disabled flag', async () => {
   await controller.off();
   assert.ok(fs.existsSync(path.join(sandbox, 'disabled')));
 });
+
+test('radio saves a known station and ignores an unknown one', async () => {
+  await withPlayer(async () => {
+    await controller.radio('metal');
+    const saved = fs.readFileSync(path.join(sandbox, 'station'), 'utf8');
+    assert.match(saved, /metal-128-mp3/);
+    await controller.radio('not-a-vibe');
+    // Unknown vibe leaves the previous station untouched.
+    assert.match(fs.readFileSync(path.join(sandbox, 'station'), 'utf8'), /metal-128-mp3/);
+  });
+});
+
+test('activityLevel rises with play events and is 0 when idle', async () => {
+  assert.strictEqual(controller.activityLevel(), 0);
+  await withPlayer(async () => {
+    await controller.play();
+    await controller.play();
+    assert.ok(controller.activityLevel() > 0, 'level rises after plays');
+    assert.ok(controller.activityLevel() <= 1, 'level is capped at 1');
+  });
+});
+
+test('stationNames exposes the curated vibes', () => {
+  const names = controller.stationNames();
+  assert.ok(names.includes('lofi') && names.includes('metal') && names.includes('rock'));
+});

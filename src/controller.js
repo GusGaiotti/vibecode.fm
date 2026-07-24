@@ -3,13 +3,22 @@
 const fs = require('fs');
 const { send } = require('./ipc');
 const { alive, start } = require('./player');
+const stations = require('./stations');
 const {
   ipcPath,
   stateDir,
   disabledFlag,
   logFile,
+  stationFile,
+  activityFile,
   defaultSource,
 } = require('./paths');
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const FADE_MS = 350;
+const FADE_STEPS = 7;
+const ACTIVITY_WINDOW_MS = 8000;
+const ACTIVITY_MAX = 6; // events in the window that count as "full intensity"
 
 function log(message) {
   if (!process.env.VIBECODE_DEBUG) return;
@@ -22,9 +31,70 @@ function log(message) {
   }
 }
 
-const source = () => process.env.VIBECODE_SOURCE || defaultSource();
-const volume = () => process.env.VIBECODE_VOLUME || '70';
+const volume = () => Number(process.env.VIBECODE_VOLUME) || 70;
 const isDisabled = () => fs.existsSync(disabledFlag());
+
+// Source precedence: explicit env > station chosen via `radio` > bundled default.
+function source() {
+  if (process.env.VIBECODE_SOURCE) return process.env.VIBECODE_SOURCE;
+  try {
+    const saved = fs.readFileSync(stationFile(), 'utf8').trim();
+    if (saved) return saved;
+  } catch {
+    /* no station chosen yet */
+  }
+  return defaultSource();
+}
+
+async function getPause() {
+  const reply = await send(ipcPath(), { command: ['get_property', 'pause'] });
+  if (!reply || reply.error !== 'success') return null;
+  return reply.data;
+}
+
+async function fadeTo(target) {
+  for (let i = 1; i <= FADE_STEPS; i += 1) {
+    const v = Math.round((target * i) / FADE_STEPS);
+    await send(ipcPath(), { command: ['set_property', 'volume', v] });
+    await sleep(FADE_MS / FADE_STEPS);
+  }
+}
+
+function recordActivity() {
+  try {
+    fs.mkdirSync(stateDir(), { recursive: true });
+    const now = Date.now();
+    let stamps = [];
+    try {
+      stamps = fs
+        .readFileSync(activityFile(), 'utf8')
+        .split('\n')
+        .map(Number)
+        .filter((t) => t && now - t < ACTIVITY_WINDOW_MS);
+    } catch {
+      /* first event */
+    }
+    stamps.push(now);
+    fs.writeFileSync(activityFile(), stamps.join('\n'));
+  } catch {
+    /* activity tracking is best-effort */
+  }
+}
+
+// 0..1 — how busy the agent has been recently. Drives the equalizer colour.
+function activityLevel() {
+  try {
+    const now = Date.now();
+    const count = fs
+      .readFileSync(activityFile(), 'utf8')
+      .split('\n')
+      .map(Number)
+      .filter((t) => t && now - t < ACTIVITY_WINDOW_MS).length;
+    return Math.min(1, count / ACTIVITY_MAX);
+  } catch {
+    return 0;
+  }
+}
 
 async function play() {
   log('action=play');
@@ -32,17 +102,24 @@ async function play() {
     log('play: disabled flag set, skipping');
     return;
   }
+  recordActivity();
+  let wasPaused = true;
   if (await alive()) {
+    wasPaused = (await getPause()) !== false;
     log('play: player already alive, resuming');
   } else {
     log('play: no live player, starting one');
-    const ok = await start(source(), volume());
-    if (!ok) {
+    if (!(await start(source(), volume()))) {
       log('play: player did not come up');
       return;
     }
   }
-  await send(ipcPath(), { command: ['set_property', 'pause', false] });
+  // Only fade in on a real paused->playing transition, not on every tool call.
+  if (wasPaused) {
+    await send(ipcPath(), { command: ['set_property', 'volume', 0] });
+    await send(ipcPath(), { command: ['set_property', 'pause', false] });
+    await fadeTo(volume());
+  }
 }
 
 async function pause() {
@@ -51,15 +128,34 @@ async function pause() {
     log('pause: no live player, nothing to do');
     return;
   }
+  if ((await getPause()) === false) {
+    await fadeTo(0);
+  }
   await send(ipcPath(), { command: ['set_property', 'pause', true] });
+}
+
+async function radio(vibe) {
+  const url = stations.resolve(vibe);
+  if (!url) return; // unknown vibe: the command file lists the options
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(stationFile(), url);
+  recordActivity();
+  if (await alive()) {
+    await send(ipcPath(), { command: ['loadfile', url] });
+    await send(ipcPath(), { command: ['set_property', 'volume', 0] });
+    await send(ipcPath(), { command: ['set_property', 'pause', false] });
+    await fadeTo(volume());
+  } else {
+    await start(url, volume());
+    await send(ipcPath(), { command: ['set_property', 'pause', false] });
+  }
 }
 
 async function status() {
   if (isDisabled()) return '';
-  const reply = await send(ipcPath(), { command: ['get_property', 'pause'] });
-  if (!reply || reply.error !== 'success') return '';
-  // Flat geometric glyphs, not the ▶️/⏸️ emoji, so terminals render them plain.
-  return reply.data ? '❚❚' : '►';
+  const paused = await getPause();
+  if (paused === null) return '';
+  return paused ? '❚❚' : '►';
 }
 
 async function track() {
@@ -71,7 +167,6 @@ async function track() {
 
 function on() {
   log('action=on');
-  // Only lift the flag; playback resumes on the next agent event.
   try {
     fs.unlinkSync(disabledFlag());
   } catch {
@@ -95,4 +190,14 @@ async function off() {
   fs.writeFileSync(disabledFlag(), '');
 }
 
-module.exports = { play, pause, status, track, on, off };
+module.exports = {
+  play,
+  pause,
+  radio,
+  status,
+  track,
+  on,
+  off,
+  activityLevel,
+  stationNames: stations.names,
+};

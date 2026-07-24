@@ -22,6 +22,9 @@ async function main() {
     case 'track':
       process.stdout.write(await controller.track());
       break;
+    case 'radio':
+      await controller.radio(process.argv[3]);
+      break;
     case 'on':
       controller.on();
       break;

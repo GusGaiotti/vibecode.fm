@@ -37,6 +37,16 @@ function mpvLogFile() {
   return path.join(stateDir(), 'mpv.log');
 }
 
+// Chosen station (set by `radio`), so hook-triggered plays keep the same one.
+function stationFile() {
+  return path.join(stateDir(), 'station');
+}
+
+// Rolling log of play events, used to gauge how hard the agent is working.
+function activityFile() {
+  return path.join(stateDir(), 'activity');
+}
+
 // Default audio source: the bundled playlist, resolved from the package root.
 function defaultSource() {
   return path.join(__dirname, '..', 'playlists', 'default.m3u');
@@ -48,5 +58,7 @@ module.exports = {
   disabledFlag,
   logFile,
   mpvLogFile,
+  stationFile,
+  activityFile,
   defaultSource,
 };
