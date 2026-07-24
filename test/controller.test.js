@@ -203,7 +203,7 @@ test('stationLabel and stationTheme follow the chosen station', async () => {
     await controller.radio('hacker');
     assert.strictEqual(controller.stationLabel(), 'DEF CON Radio · SomaFM');
     const theme = controller.stationTheme();
-    assert.ok(theme && Array.isArray(theme.stops) && theme.note, 'themed station');
+    assert.ok(theme && Array.isArray(theme.stops) && Array.isArray(theme.sprites), 'themed station');
     await controller.radio('chill');
     assert.strictEqual(controller.stationLabel(), 'Groove Salad · SomaFM');
     assert.strictEqual(controller.stationTheme(), null, 'default theme station');
@@ -218,7 +218,7 @@ test('custom stations from a user file extend the built-ins', async () => {
       focus: {
         url: 'https://example.com/focus.mp3',
         label: 'Focus FM',
-        theme: { stops: [{ p: 0, c: [1, 2, 3] }], note: [9, 9, 9] },
+        theme: { stops: [{ p: 0, c: [1, 2, 3] }], sprites: ['@', '#'] },
       },
       plain: 'https://example.com/plain.mp3',
       broken: { nope: true },
@@ -236,7 +236,7 @@ test('custom stations from a user file extend the built-ins', async () => {
     await controller.radio('focus');
   });
   assert.strictEqual(controller.stationLabel(), 'Focus FM', 'custom label, no suffix');
-  assert.deepStrictEqual(controller.stationTheme().note, [9, 9, 9], 'custom theme');
+  assert.deepStrictEqual(controller.stationTheme().sprites, ['@', '#'], 'custom theme');
   delete process.env.VIBECODE_STATIONS;
 });
 
@@ -250,10 +250,13 @@ test('lastActivityMs tracks the newest play event', async () => {
   assert.ok(last >= before && last <= Date.now(), 'stamp is from this play');
 });
 
-test('watchdog pauses only a playing player past the idle limit', () => {
+test('watchdog hard-pauses idle players, holding a muted one much longer', () => {
   const { shouldPause } = require('../src/watchdog');
-  assert.strictEqual(shouldPause('►', 121000, 120000), true, 'playing + idle: pause');
-  assert.strictEqual(shouldPause('►', 5000, 120000), false, 'playing + fresh: keep');
-  assert.strictEqual(shouldPause('❚❚', 999000, 120000), false, 'paused: nothing to do');
-  assert.strictEqual(shouldPause('', 999000, 120000), false, 'no player: nothing to do');
+  const limit = 120000;
+  assert.strictEqual(shouldPause('►', 121000, limit), true, 'playing + idle: pause');
+  assert.strictEqual(shouldPause('►', 5000, limit), false, 'playing + fresh: keep');
+  // A muted player (waiting on the user) stays warm until the 8x hold window.
+  assert.strictEqual(shouldPause('❚❚', 121000, limit), false, 'muted + short idle: keep warm');
+  assert.strictEqual(shouldPause('❚❚', limit * 8 + 1, limit), true, 'muted + very long idle: stop');
+  assert.strictEqual(shouldPause('', 999999999, limit), false, 'no player: nothing to do');
 });
