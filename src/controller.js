@@ -271,6 +271,15 @@ async function play() {
     const target = targetVolume();
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
+    // If the stream went stale while paused (empty cache), mpv's own recovery
+    // can take many seconds. Force a fresh reconnect (~1s) instead of waiting.
+    const cache = await getProp('demuxer-cache-time');
+    if (!(typeof cache === 'number' && cache > 1)) {
+      log(`play: cache empty (${cache}), reconnecting fresh`);
+      await send(ipcPath(), { command: ['loadfile', source()] });
+      await send(ipcPath(), { command: ['set_property', 'mute', false] });
+      await send(ipcPath(), { command: ['set_property', 'pause', false] });
+    }
     const finished = await timed('fade-in', () => fade(Math.round(target / 2), target, token));
     if (!finished) {
       // A pause superseded us mid fade-in: undo the un-mute.

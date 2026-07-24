@@ -4,30 +4,14 @@
 // Entry point invoked by Claude Code hooks and the statusline.
 // Contract: only `status` and `track` write to stdout; everything else is
 // silent, and the process always exits 0 so a hook can never break a session.
-
-// Hooks are BLOCKING: Claude Code waits for them before starting the turn or
-// the tool. `play`/`radio` can cold-start mpv (seconds), so they re-spawn
-// themselves detached and return immediately — the session never waits for a
-// player boot. `pause` never cold-starts (it no-ops without a live player), so
-// it runs inline: skipping the ~250ms re-spawn makes the music stop the moment
-// Claude asks for your attention.
-const DETACHED_ACTIONS = new Set(['play', 'radio', 'next']);
-
-function detach() {
-  const { spawn } = require('child_process');
-  try {
-    const child = spawn(process.execPath, [__filename, ...process.argv.slice(2)], {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true,
-      env: { ...process.env, VIBECODE_DIRECT: '1' },
-    });
-    child.on('error', () => {});
-    child.unref();
-  } catch {
-    /* losing one beat is better than delaying the session */
-  }
-}
+//
+// Everything runs INLINE in the hook process. An earlier version re-spawned a
+// detached child to do the work "without blocking", but on Windows that child
+// could be torn down when the hook returned, so a resume never finished and the
+// music stayed silent. Running inline is cheap — a resume is a couple of IPC
+// calls plus a short fade, and a play while already playing is a no-op — and it
+// guarantees the work completes before the hook returns. mpv itself is still
+// spawned detached (in player.js) so the audio outlives the hook.
 
 function log(action, message) {
   const { stateDir, logFile, debugEnabled } = require('../src/paths');
@@ -44,16 +28,11 @@ function log(action, message) {
 
 async function main() {
   const action = process.argv[2];
-  // Stamp the event's order the moment the hook fires, so a detached child
-  // carries the fire-time — not its later spawn time — when it competes with
-  // other events. Inline actions get the same stamp at run time.
+  // Stamp when the hook fired so racing events serialize by real order.
   if (!process.env.VIBECODE_TOKEN) process.env.VIBECODE_TOKEN = String(Date.now());
-  if (DETACHED_ACTIONS.has(action) && !process.env.VIBECODE_DIRECT) {
-    log(action, `hook fired (token ${process.env.VIBECODE_TOKEN}) -> detaching`);
-    detach();
-    return;
+  if (['play', 'pause', 'radio', 'next'].includes(action)) {
+    log(action, `hook fired (token ${process.env.VIBECODE_TOKEN})`);
   }
-  if (DETACHED_ACTIONS.has(action)) log(action, 'detached child running');
   const controller = require('../src/controller');
   switch (action) {
     case 'play':
