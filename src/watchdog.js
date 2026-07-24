@@ -72,13 +72,16 @@ async function run() {
     }
     const idleMs = Date.now() - controller.lastActivityMs();
     if (shouldPause(status, idleMs, idleTimeoutMs())) {
+      // A turn died without a Stop hook: silence AND stop the stream.
       log(`no play events for ${Math.round(idleMs / 1000)}s, pausing`);
-      await controller.pause();
+      await controller.hardPause();
       return cleanup();
     }
     if (status === '❚❚' && idleMs >= idleTimeoutMs()) {
-      // Paused and long idle: nothing to guard until the next play respawns us.
-      log('paused and idle, exiting');
+      // Soft-paused (muted, stream still flowing) and long idle: stop the
+      // download for real. The next play respawns us.
+      log('idle, stopping the stream');
+      await controller.hardPause();
       return cleanup();
     }
   }

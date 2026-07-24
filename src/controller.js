@@ -72,10 +72,21 @@ function source() {
   return defaultSource();
 }
 
-async function getPause() {
-  const reply = await send(ipcPath(), { command: ['get_property', 'pause'] });
+async function getProp(name) {
+  const reply = await send(ipcPath(), { command: ['get_property', name] });
   if (!reply || reply.error !== 'success') return null;
   return reply.data;
+}
+
+// Logical "halted" state. A pause here is a SOFT pause — fade out and mute,
+// keeping the live stream flowing so resume is instant (a hard mpv pause
+// disconnects the radio stream after a while and resuming needs a slow
+// reconnect). The watchdog issues the hard pause once the session goes idle.
+async function isHalted() {
+  const paused = await getProp('pause');
+  if (paused === null) return null;
+  if (paused) return true;
+  return (await getProp('mute')) === true;
 }
 
 async function fadeTo(target) {
@@ -171,9 +182,9 @@ async function play() {
     return;
   }
   recordActivity();
-  let wasPaused = true;
+  let wasHalted = true;
   if (await alive()) {
-    wasPaused = (await getPause()) !== false;
+    wasHalted = (await isHalted()) !== false;
     log('play: player already alive, resuming');
   } else {
     log('play: no live player, starting one');
@@ -182,9 +193,10 @@ async function play() {
       return;
     }
   }
-  if (wasPaused) {
-    // Real paused->playing transition: fade in to the target volume.
+  if (wasHalted) {
+    // Real halted->playing transition: fade in to the target volume.
     await send(ipcPath(), { command: ['set_property', 'volume', 0] });
+    await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
     await fadeTo(targetVolume());
   } else if (adaptiveEnabled()) {
@@ -201,9 +213,22 @@ async function pause() {
     log('pause: no live player, nothing to do');
     return;
   }
-  if ((await getPause()) === false) {
+  if ((await isHalted()) === false) {
     await fadeTo(0);
   }
+  // Soft pause: mute but keep the stream flowing so the next play is instant.
+  // The watchdog hard-pauses after the idle timeout to stop the download.
+  await send(ipcPath(), { command: ['set_property', 'mute', true] });
+  ensureWatchdog();
+}
+
+// Fully stop the stream (watchdog, after long idle): mute AND hard-pause.
+async function hardPause() {
+  if (!(await alive())) return;
+  if ((await isHalted()) === false) {
+    await fadeTo(0);
+  }
+  await send(ipcPath(), { command: ['set_property', 'mute', true] });
   await send(ipcPath(), { command: ['set_property', 'pause', true] });
 }
 
@@ -216,19 +241,21 @@ async function radio(vibe) {
   if (await alive()) {
     await send(ipcPath(), { command: ['loadfile', url] });
     await send(ipcPath(), { command: ['set_property', 'volume', 0] });
+    await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
     await fadeTo(targetVolume());
   } else {
     await start(url, targetVolume());
+    await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
   }
 }
 
 async function status() {
   if (isDisabled()) return '';
-  const paused = await getPause();
-  if (paused === null) return '';
-  return paused ? '❚❚' : '►';
+  const halted = await isHalted();
+  if (halted === null) return '';
+  return halted ? '❚❚' : '►';
 }
 
 async function track() {
@@ -286,6 +313,7 @@ async function off() {
 module.exports = {
   play,
   pause,
+  hardPause,
   radio,
   status,
   track,

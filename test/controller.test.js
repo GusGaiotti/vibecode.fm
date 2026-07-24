@@ -11,7 +11,7 @@ const path = require('path');
 // answering the same JSON IPC commands. Lets us exercise the real controller
 // end to end, identically on Windows (named pipe) and Unix (socket file).
 function fakeMpv(ipcPath) {
-  const state = { paused: true, title: 'Fake FM - Test Track' };
+  const state = { paused: true, muted: false, title: 'Fake FM - Test Track' };
   const server = net.createServer((sock) => {
     sock.on('error', () => {});
     sock.on('data', (chunk) => {
@@ -23,10 +23,15 @@ function fakeMpv(ipcPath) {
           sock.write('{"data":"mpv fake","error":"success"}\n');
         } else if (verb === 'get_property' && prop === 'pause') {
           sock.write(`{"data":${state.paused},"error":"success"}\n`);
+        } else if (verb === 'get_property' && prop === 'mute') {
+          sock.write(`{"data":${state.muted},"error":"success"}\n`);
         } else if (verb === 'get_property' && prop === 'media-title') {
           sock.write(`{"data":${JSON.stringify(state.title)},"error":"success"}\n`);
         } else if (verb === 'set_property' && prop === 'pause') {
           state.paused = value;
+          sock.write('{"error":"success"}\n');
+        } else if (verb === 'set_property' && prop === 'mute') {
+          state.muted = value;
           sock.write('{"error":"success"}\n');
         } else if (verb === 'quit') {
           sock.write('{"error":"success"}\n');
@@ -105,11 +110,25 @@ test('play resumes a running player and status shows the play glyph', async () =
   });
 });
 
-test('pause pauses a running player and status shows the pause glyph', async () => {
+test('pause is a soft pause: mutes, keeps the stream flowing', async () => {
   await withPlayer(async (state) => {
     await controller.play();
     await controller.pause();
-    assert.strictEqual(state.paused, true);
+    assert.strictEqual(state.muted, true, 'muted');
+    assert.strictEqual(state.paused, false, 'stream still flowing for instant resume');
+    assert.strictEqual(await controller.status(), '❚❚');
+    await controller.play();
+    assert.strictEqual(state.muted, false, 'resume unmutes');
+    assert.strictEqual(await controller.status(), '►');
+  });
+});
+
+test('hardPause stops the stream for real', async () => {
+  await withPlayer(async (state) => {
+    await controller.play();
+    await controller.hardPause();
+    assert.strictEqual(state.muted, true);
+    assert.strictEqual(state.paused, true, 'download stopped');
     assert.strictEqual(await controller.status(), '❚❚');
   });
 });
