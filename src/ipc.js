@@ -27,8 +27,12 @@ function send(ipcPath, command, timeoutMs = 1000) {
 
     socket.on('data', (chunk) => {
       buffer += chunk.toString();
-      // mpv may emit event lines first; the reply is the line with an "error" field.
-      for (const line of buffer.split('\n')) {
+      // mpv may emit event lines first; the reply is the line with an "error"
+      // field. Only complete lines are parsed — the tail stays buffered so a
+      // reply split across TCP chunks never turns into a bogus parse failure.
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
         if (line.includes('"error"')) {
           try {
             finish(JSON.parse(line));
