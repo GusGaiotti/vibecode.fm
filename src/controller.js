@@ -46,11 +46,17 @@ function adaptiveVolume(base, level) {
   return Math.max(0, Math.min(100, v));
 }
 
-// The volume a play should aim for. Opt-in: only tracks intensity when
-// VIBECODE_ADAPTIVE is set, otherwise it's the plain configured volume.
+// Adaptive volume — the music swells and eases with how hard the agent is
+// working — is on by default; VIBECODE_ADAPTIVE=0 keeps a fixed volume.
+function adaptiveEnabled() {
+  const v = String(process.env.VIBECODE_ADAPTIVE || '').toLowerCase();
+  return !['0', 'false', 'off', 'no'].includes(v);
+}
+
+// The volume a play should aim for.
 function targetVolume() {
   const base = volume();
-  if (!process.env.VIBECODE_ADAPTIVE) return base;
+  if (!adaptiveEnabled()) return base;
   return adaptiveVolume(base, activityLevel());
 }
 
@@ -181,7 +187,7 @@ async function play() {
     await send(ipcPath(), { command: ['set_property', 'volume', 0] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
     await fadeTo(targetVolume());
-  } else if (process.env.VIBECODE_ADAPTIVE) {
+  } else if (adaptiveEnabled()) {
     // Already playing: nudge the volume toward the current intensity so the
     // music swells and eases with how hard the agent is working.
     await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
