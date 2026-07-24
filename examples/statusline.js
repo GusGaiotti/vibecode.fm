@@ -252,16 +252,23 @@ async function main() {
   if (icon === '►' || icon === '❚❚') {
     const moving = icon === '►';
     const theme = controller.stationTheme() || DEFAULT_THEME;
-    const title = marquee(await displayTitle(), TITLE_MAX);
-    const head = moving
-      ? `${paint('►', 90, 222, 120, true)} ${paint(title, 228, 232, 238, true)}`
-      : `${paint('·', 120, 128, 140)} ${paint(title, 150, 156, 166)}`;
-    const headLen = 2 + title.length; // glyph + space + title
-    const midW = Math.max(0, width - headLen - model.length - 2);
     const bright = gradientColor(theme.stops || DEFAULT_THEME.stops, 1);
-    const band = moving
-      ? centre(midW, pickPhrase(theme), bright, controller.activityLevel(), theme, true)
-      : centre(midW, 'Your move!', [236, 200, 64], 0, theme, false);
+    let head;
+    let headLen;
+    if (moving) {
+      // ► + live track/station title.
+      const title = marquee(await displayTitle(), TITLE_MAX);
+      head = `${paint('►', 90, 222, 120, true)} ${paint(title, 228, 232, 238, true)}`;
+      headLen = 2 + title.length; // glyph + space + title
+    } else {
+      // Solid pause bars + "Your move!" in place of the title.
+      const label = 'Your move!';
+      head = `${paint('▌▐', 236, 200, 64, true)} ${paint(label, 236, 210, 120, true)}`;
+      headLen = 3 + label.length; // two bars + space + label
+    }
+    // The splash phrase stays in the centre in both states.
+    const midW = Math.max(0, width - headLen - model.length - 2);
+    const band = centre(midW, pickPhrase(theme), bright, controller.activityLevel(), theme, moving);
     out = `${head} ${band} ${paint(model, mr, mg, mb)}`;
   }
 
