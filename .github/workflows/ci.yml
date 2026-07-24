@@ -7,10 +7,14 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: shellcheck
-        run: shellcheck scripts/*.sh examples/*.sh tests/run-tests.sh tests/mocks/*
-      - name: tests
-        run: bash tests/run-tests.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node --test

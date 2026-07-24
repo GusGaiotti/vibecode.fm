@@ -1,0 +1,29 @@
+{
+  "name": "vibecode-fm",
+  "version": "0.2.0",
+  "description": "Music that plays while Claude Code works and pauses when it's your turn.",
+  "bin": {
+    "vibecode-fm": "bin/vibecode.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "author": "Gustavo Gaiotti",
+  "homepage": "https://github.com/GusGaiotti/vibecode.fm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GusGaiotti/vibecode.fm.git"
+  },
+  "files": [
+    "bin",
+    "src",
+    "playlists",
+    "hooks",
+    "commands",
+    "examples"
+  ]
+}
