@@ -55,6 +55,11 @@ function stationFile() {
   return path.join(stateDir(), 'station');
 }
 
+// Base volume chosen via `/volume`, persisted so hook-triggered plays keep it.
+function volumeFile() {
+  return path.join(stateDir(), 'volume');
+}
+
 // Rolling log of play events, used to gauge how hard the agent is working.
 function activityFile() {
   return path.join(stateDir(), 'activity');
@@ -79,6 +84,7 @@ module.exports = {
   debugEnabled,
   mpvLogFile,
   stationFile,
+  volumeFile,
   activityFile,
   watchdogFile,
   defaultSource,

@@ -172,6 +172,29 @@ test('radio saves a known station and ignores an unknown one', async () => {
   });
 });
 
+test('next advances to a different station and wraps', async () => {
+  await withPlayer(async () => {
+    await controller.radio('chill');
+    const first = fs.readFileSync(path.join(sandbox, 'station'), 'utf8');
+    await controller.next();
+    const second = fs.readFileSync(path.join(sandbox, 'station'), 'utf8');
+    assert.notStrictEqual(first, second, 'station advanced');
+  });
+});
+
+test('setVolume persists a clamped base volume', async () => {
+  await controller.setVolume(80);
+  assert.strictEqual(fs.readFileSync(path.join(sandbox, 'volume'), 'utf8'), '80');
+  await controller.setVolume('up');
+  assert.strictEqual(fs.readFileSync(path.join(sandbox, 'volume'), 'utf8'), '90');
+  await controller.setVolume('down');
+  assert.strictEqual(fs.readFileSync(path.join(sandbox, 'volume'), 'utf8'), '80');
+  await controller.setVolume(999);
+  assert.strictEqual(fs.readFileSync(path.join(sandbox, 'volume'), 'utf8'), '100');
+  await controller.setVolume('nonsense'); // ignored, stays put
+  assert.strictEqual(fs.readFileSync(path.join(sandbox, 'volume'), 'utf8'), '100');
+});
+
 test('activityLevel rises with play events and is 0 when idle', async () => {
   assert.strictEqual(controller.activityLevel(), 0);
   await withPlayer(async () => {

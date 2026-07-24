@@ -11,7 +11,7 @@
 // player boot. `pause` never cold-starts (it no-ops without a live player), so
 // it runs inline: skipping the ~250ms re-spawn makes the music stop the moment
 // Claude asks for your attention.
-const DETACHED_ACTIONS = new Set(['play', 'radio']);
+const DETACHED_ACTIONS = new Set(['play', 'radio', 'next']);
 
 function detach() {
   const { spawn } = require('child_process');
@@ -66,6 +66,12 @@ async function main() {
       break;
     case 'radio':
       await controller.radio(process.argv[3]);
+      break;
+    case 'next':
+      await controller.next();
+      break;
+    case 'volume':
+      await controller.setVolume(process.argv[3]);
       break;
     case 'on':
       controller.on();

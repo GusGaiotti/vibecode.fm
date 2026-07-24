@@ -12,6 +12,7 @@ const {
   disabledFlag,
   logFile,
   stationFile,
+  volumeFile,
   activityFile,
   watchdogFile,
   debugEnabled,
@@ -43,7 +44,16 @@ async function timed(label, fn) {
   return result;
 }
 
-const volume = () => Number(process.env.VIBECODE_VOLUME) || 70;
+// Base volume: what `/volume` persisted, else VIBECODE_VOLUME, else 70.
+function volume() {
+  try {
+    const saved = Number(fs.readFileSync(volumeFile(), 'utf8').trim());
+    if (Number.isFinite(saved)) return saved;
+  } catch {
+    /* nothing saved yet */
+  }
+  return Number(process.env.VIBECODE_VOLUME) || 70;
+}
 const isDisabled = () => fs.existsSync(disabledFlag());
 
 const ADAPTIVE_SPREAD = 15;
@@ -256,9 +266,18 @@ async function hardPause() {
   await send(ipcPath(), { command: ['set_property', 'pause', true] });
 }
 
-async function radio(vibe) {
-  const url = stations.resolve(vibe);
-  if (!url) return; // unknown vibe: the command file lists the options
+// URL of the station currently selected via `radio`/`next`, or null.
+function currentStation() {
+  try {
+    return fs.readFileSync(stationFile(), 'utf8').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+// Switch to `url` live (loadfile) if a player is up, else cold-start on it, and
+// remember it so hook-triggered plays keep the same station.
+async function applyStation(url) {
   fs.mkdirSync(stateDir(), { recursive: true });
   fs.writeFileSync(stationFile(), url);
   recordActivity();
@@ -273,6 +292,40 @@ async function radio(vibe) {
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
   }
+  ensureWatchdog();
+}
+
+async function radio(vibe) {
+  const url = stations.resolve(vibe);
+  if (!url) return; // unknown vibe: the command file lists the options
+  await applyStation(url);
+}
+
+// Cycle to the next station in the carousel.
+async function next() {
+  const url = stations.nextStation(currentStation());
+  if (url) await applyStation(url);
+}
+
+// Set the base volume. `arg` is 'up', 'down', or a number 0-100. Persists it
+// and applies it live if a player is up.
+async function setVolume(arg) {
+  const base = volume();
+  let v;
+  if (arg === 'up') v = base + 10;
+  else if (arg === 'down') v = base - 10;
+  else {
+    const n = parseInt(arg, 10);
+    if (Number.isNaN(n)) return;
+    v = n;
+  }
+  v = Math.max(0, Math.min(100, v));
+  fs.mkdirSync(stateDir(), { recursive: true });
+  fs.writeFileSync(volumeFile(), String(v));
+  if (await alive()) {
+    await send(ipcPath(), { command: ['set_property', 'volume', v] });
+  }
+  log(`volume: ${v}`);
 }
 
 async function status() {
@@ -339,6 +392,8 @@ module.exports = {
   pause,
   hardPause,
   radio,
+  next,
+  setVolume,
   status,
   track,
   on,

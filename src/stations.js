@@ -234,6 +234,34 @@ function custom() {
   return out;
 }
 
+// One canonical vibe per distinct channel, the order `/next` cycles through.
+const CAROUSEL = [
+  'chill', 'ambient', 'metal', 'jazz', 'synthwave', 'hacker', 'beats',
+  'indie', 'spy', 'vaporwave', 'space', 'glitch', 'tavern', 'goa',
+];
+
+// Ordered, de-duplicated list of station URLs for `/next`: the curated
+// carousel first, then any custom stations the user added.
+function carousel() {
+  const urls = [];
+  for (const vibe of CAROUSEL) {
+    const u = STATIONS[vibe];
+    if (u && !urls.includes(u)) urls.push(u);
+  }
+  for (const u of Object.values(custom().stations)) {
+    if (!urls.includes(u)) urls.push(u);
+  }
+  return urls;
+}
+
+// The station after `currentUrl` in the carousel (wraps around); the first
+// station when the current one isn't in the list.
+function nextStation(currentUrl) {
+  const list = carousel();
+  if (!list.length) return null;
+  return list[(list.indexOf(currentUrl) + 1) % list.length];
+}
+
 function resolve(name) {
   if (!name) return null;
   const key = name.toLowerCase();
@@ -257,4 +285,4 @@ function theme(url) {
   return custom().themes[url] || THEMES[url] || null;
 }
 
-module.exports = { resolve, names, label, theme };
+module.exports = { resolve, names, label, theme, nextStation };
