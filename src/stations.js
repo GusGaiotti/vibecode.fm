@@ -24,6 +24,15 @@ const STATIONS = {
   hiphop: `${BASE}/fluid-128-mp3`,
   indie: `${BASE}/indiepop-128-mp3`,
   rock: `${BASE}/indiepop-128-mp3`,
+  bossa: `${BASE}/bossa-128-mp3`,
+  bossanova: `${BASE}/bossa-128-mp3`,
+  seventies: `${BASE}/seventies-128-mp3`,
+  '70s': `${BASE}/seventies-128-mp3`,
+  reggae: `${BASE}/reggae-128-mp3`,
+  dubstep: `${BASE}/dubstep-128-mp3`,
+  dub: `${BASE}/dubstep-128-mp3`,
+  lounge: `${BASE}/illstreet-128-mp3`,
+  folk: `${BASE}/folkfwd-128-mp3`,
   spy: `${BASE}/secretagent-128-mp3`,
   agent: `${BASE}/secretagent-128-mp3`,
   vaporwave: `${BASE}/vaporwaves-128-mp3`,
@@ -54,6 +63,12 @@ const LABELS = {
   [`${BASE}/cliqhop-128-mp3`]: 'cliqhop idm',
   [`${BASE}/thistle-128-mp3`]: 'ThistleRadio',
   [`${BASE}/suburbsofgoa-128-mp3`]: 'Suburbs of Goa',
+  [`${BASE}/bossa-128-mp3`]: 'Bossa Beyond',
+  [`${BASE}/seventies-128-mp3`]: 'Left Coast 70s',
+  [`${BASE}/reggae-128-mp3`]: 'Heavyweight Reggae',
+  [`${BASE}/dubstep-128-mp3`]: 'Dub Step Beyond',
+  [`${BASE}/illstreet-128-mp3`]: 'Illinois St. Lounge',
+  [`${BASE}/folkfwd-128-mp3`]: 'Folk Forward',
 };
 
 // Visual identity per channel for the statusline: a colour gradient, a `tag`
@@ -191,6 +206,66 @@ const THEMES = {
     ],
     sprites: ['◉', '♪', '❂', '✹', '♫', '✸', '❈', '⊛', '♩', '◎'],
   },
+  [`${BASE}/bossa-128-mp3`]: {
+    tag: 'jazz',
+    // tropical: green -> gold
+    stops: [
+      { p: 0.0, c: [90, 200, 110] },
+      { p: 0.5, c: [220, 200, 90] },
+      { p: 1.0, c: [255, 230, 140] },
+    ],
+    sprites: ['♪', '♫', '♬', '♩', '❀', '✿', '·', '✦', '♭', '♮'],
+  },
+  [`${BASE}/seventies-128-mp3`]: {
+    tag: 'indie',
+    // disco: brown -> orange -> gold
+    stops: [
+      { p: 0.0, c: [200, 110, 50] },
+      { p: 0.5, c: [240, 160, 60] },
+      { p: 1.0, c: [255, 210, 120] },
+    ],
+    sprites: ['♪', '●', '♫', '◆', '♬', '☆', '♩', '✦', '○', '♭'],
+  },
+  [`${BASE}/reggae-128-mp3`]: {
+    tag: 'chill',
+    // rasta: green -> gold -> red
+    stops: [
+      { p: 0.0, c: [40, 180, 70] },
+      { p: 0.5, c: [240, 210, 60] },
+      { p: 1.0, c: [220, 70, 50] },
+    ],
+    sprites: ['♪', '♫', '♬', '●', '♩', '◆', '✦', '·', '♭', '○'],
+  },
+  [`${BASE}/dubstep-128-mp3`]: {
+    tag: 'beats',
+    // wobble: purple -> teal -> lime
+    stops: [
+      { p: 0.0, c: [120, 80, 220] },
+      { p: 0.5, c: [80, 180, 160] },
+      { p: 1.0, c: [180, 240, 120] },
+    ],
+    sprites: ['♪', '≈', '♫', '▓', '♬', '▒', '♩', '~', '█', '♭'],
+  },
+  [`${BASE}/illstreet-128-mp3`]: {
+    tag: 'jazz',
+    // cocktail lounge: amber
+    stops: [
+      { p: 0.0, c: [170, 120, 70] },
+      { p: 0.5, c: [220, 170, 90] },
+      { p: 1.0, c: [245, 215, 150] },
+    ],
+    sprites: ['♪', '♫', '♬', '♩', '◆', '·', '♭', '♮', '✦', '○'],
+  },
+  [`${BASE}/folkfwd-128-mp3`]: {
+    tag: 'tavern',
+    // earthy: green -> gold
+    stops: [
+      { p: 0.0, c: [110, 140, 70] },
+      { p: 0.5, c: [160, 180, 90] },
+      { p: 1.0, c: [220, 210, 130] },
+    ],
+    sprites: ['♪', '❀', '♫', '♣', '♬', '❦', '♩', '✿', '♭', '·'],
+  },
 };
 
 // Users can add their own stations — and optionally a label and a theme
@@ -238,6 +313,7 @@ function custom() {
 const CAROUSEL = [
   'chill', 'ambient', 'metal', 'jazz', 'synthwave', 'hacker', 'beats',
   'indie', 'spy', 'vaporwave', 'space', 'glitch', 'tavern', 'goa',
+  'bossa', 'seventies', 'reggae', 'dubstep', 'lounge', 'folk',
 ];
 
 // Ordered, de-duplicated list of station URLs for `/next`: the curated

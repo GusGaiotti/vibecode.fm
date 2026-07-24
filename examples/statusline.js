@@ -27,6 +27,15 @@ const BOLD = '\x1b[1m';
 const fg = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;
 const paint = (s, r, g, b, bold) => `${bold ? BOLD : ''}${fg(r, g, b)}${s}${RESET}`;
 
+// ---- Config toggles (env vars, documented in the README) ---------------------
+// VIBECODE_SPRITES=0  drop the drifting icons (keep the splash phrase)
+// VIBECODE_SPLASH=0   drop the splash phrase (keep the icons)
+function envOff(name) {
+  return ['0', 'false', 'off', 'no'].includes(String(process.env[name] || '').toLowerCase());
+}
+const spritesEnabled = () => !envOff('VIBECODE_SPRITES');
+const splashEnabled = () => !envOff('VIBECODE_SPLASH');
+
 // ---- Theme fallback (chill / lofi / Groove Salad and custom stations) --------
 const DEFAULT_THEME = {
   tag: 'chill',
@@ -49,6 +58,19 @@ function gradientColor(stops, t) {
     }
   }
   return stops[stops.length - 1].c;
+}
+
+// Colour a string letter-by-letter across the theme gradient; `animate` drifts
+// the gradient over time so the phrase shimmers.
+function gradientText(text, stops, animate) {
+  const drift = animate ? Date.now() / 2200 : 0;
+  let out = BOLD;
+  for (let i = 0; i < text.length; i += 1) {
+    const t = (text.length > 1 ? i / (text.length - 1) : 0) * 0.85 + drift;
+    const [r, g, b] = gradientColor(stops, t);
+    out += fg(r, g, b) + text[i];
+  }
+  return out + RESET;
 }
 
 // ---- Splash phrases ----------------------------------------------------------
@@ -156,7 +178,7 @@ function spriteRun(cols, intensity, theme, moving, phase) {
   const stops = theme.stops || DEFAULT_THEME.stops;
   const gap = moving ? Math.max(1, 3 - Math.round(intensity * 2)) : 3; // busier => denser
   const period = gap + 1;
-  const speed = 2 + intensity * 7;
+  const speed = 3 + intensity * 12; // more frenetic the harder the agent works
   const offset = (moving ? Math.floor((Date.now() / 1000) * speed) : 0) + phase;
   const flow = Date.now() / 1400;
   let out = '';
@@ -217,21 +239,45 @@ async function displayTitle() {
   return controller.stationLabel() || 'vibecode.fm';
 }
 
-// Build the centre band: a splash phrase centred, sprites drifting in from both
-// sides. Falls back to a full sprite run when there isn't room for the phrase.
-function centre(width, phraseText, phraseColor, intensity, theme, moving) {
-  if (width < 6) return ' '.repeat(Math.max(0, width));
-  const label = `"${phraseText}"`;
-  if (width >= label.length + 6) {
-    const side = width - label.length - 2;
+// Build the centre band: a gradient splash phrase in the middle, themed sprites
+// drifting in from both sides, and a music note anchoring each far end as a
+// signature that this is a music feature. Respects the sprites/splash toggles
+// and degrades gracefully as width shrinks.
+function centreBand(width, phraseText, intensity, theme, moving) {
+  if (width <= 0) return '';
+  const stops = theme.stops || DEFAULT_THEME.stops;
+  const sprites = spritesEnabled();
+  const splash = splashEnabled() && phraseText;
+
+  // Music-note anchors on the extreme ends (only when icons are on).
+  let lAnchor = '';
+  let rAnchor = '';
+  let inner = width;
+  if (sprites && width >= 4) {
+    lAnchor = paint('♪', ...gradientColor(stops, 0.15), true);
+    rAnchor = paint('♫', ...gradientColor(stops, 0.85), true);
+    inner = width - 2;
+  }
+
+  let mid;
+  const label = splash ? `"${phraseText}"` : '';
+  if (splash && inner >= label.length + (sprites ? 6 : 2)) {
+    const side = inner - label.length - 2;
     const leftW = Math.floor(side / 2);
     const rightW = side - leftW;
-    const [r, g, b] = phraseColor;
-    const left = spriteRun(leftW, intensity, theme, moving, 0);
-    const right = spriteRun(rightW, intensity, theme, moving, 5);
-    return `${left} ${paint(label, r, g, b, true)} ${right}`;
+    const left = sprites ? spriteRun(leftW, intensity, theme, moving, 0) : ' '.repeat(leftW);
+    const right = sprites ? spriteRun(rightW, intensity, theme, moving, 5) : ' '.repeat(rightW);
+    mid = `${left} ${gradientText(label, stops, moving)} ${right}`;
+  } else if (splash && inner >= label.length) {
+    const pad = inner - label.length;
+    const l = Math.floor(pad / 2);
+    mid = ' '.repeat(l) + gradientText(label, stops, moving) + ' '.repeat(pad - l);
+  } else if (sprites) {
+    mid = spriteRun(inner, intensity, theme, moving, 0);
+  } else {
+    mid = ' '.repeat(Math.max(0, inner));
   }
-  return spriteRun(width, intensity, theme, moving, 0);
+  return lAnchor + mid + rAnchor;
 }
 
 async function main() {
@@ -252,13 +298,14 @@ async function main() {
   if (icon === '►' || icon === '❚❚') {
     const moving = icon === '►';
     const theme = controller.stationTheme() || DEFAULT_THEME;
-    const bright = gradientColor(theme.stops || DEFAULT_THEME.stops, 1);
+    const stops = theme.stops || DEFAULT_THEME.stops;
     let head;
     let headLen;
     if (moving) {
-      // ► + live track/station title.
+      // ► + live track/station title, tinted to the station theme.
       const title = marquee(await displayTitle(), TITLE_MAX);
-      head = `${paint('►', 90, 222, 120, true)} ${paint(title, 228, 232, 238, true)}`;
+      const [tr, tg, tb] = gradientColor(stops, 0.9);
+      head = `${paint('►', ...gradientColor(stops, 0.2), true)} ${paint(title, tr, tg, tb, true)}`;
       headLen = 2 + title.length; // glyph + space + title
     } else {
       // Solid pause bars + "Your move!" in place of the title.
@@ -268,7 +315,7 @@ async function main() {
     }
     // The splash phrase stays in the centre in both states.
     const midW = Math.max(0, width - headLen - model.length - 2);
-    const band = centre(midW, pickPhrase(theme), bright, controller.activityLevel(), theme, moving);
+    const band = centreBand(midW, pickPhrase(theme), controller.activityLevel(), theme, moving);
     out = `${head} ${band} ${paint(model, mr, mg, mb)}`;
   }
 
