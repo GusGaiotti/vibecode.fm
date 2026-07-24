@@ -28,10 +28,13 @@ function log(action, message) {
 
 async function main() {
   const action = process.argv[2];
+  // For play/pause the hooks pass their event name as argv[3] (UserPromptSubmit,
+  // PreToolUse, PostToolUse, Stop, SessionEnd) — logged for diagnosis only.
+  const event = process.argv[3];
   // Stamp when the hook fired so racing events serialize by real order.
   if (!process.env.VIBECODE_TOKEN) process.env.VIBECODE_TOKEN = String(Date.now());
-  if (['play', 'pause', 'radio', 'next'].includes(action)) {
-    log(action, `hook fired (token ${process.env.VIBECODE_TOKEN})`);
+  if (['play', 'pause'].includes(action)) {
+    log(action, `from ${event || '?'} (token ${process.env.VIBECODE_TOKEN})`);
   }
   const controller = require('../src/controller');
   switch (action) {
