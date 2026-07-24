@@ -162,6 +162,7 @@ test('activityLevel rises with play events and is 0 when idle', async () => {
 test('stationNames exposes the curated vibes', () => {
   const names = controller.stationNames();
   assert.ok(names.includes('lofi') && names.includes('metal') && names.includes('rock'));
+  assert.ok(names.includes('spy') && names.includes('vaporwave') && names.includes('tavern'));
 });
 
 test('adaptiveVolume scales around the base with intensity and clamps', () => {

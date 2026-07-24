@@ -20,6 +20,17 @@ const STATIONS = {
   hiphop: `${BASE}/fluid-128-mp3`,
   indie: `${BASE}/indiepop-128-mp3`,
   rock: `${BASE}/indiepop-128-mp3`,
+  spy: `${BASE}/secretagent-128-mp3`,
+  agent: `${BASE}/secretagent-128-mp3`,
+  vaporwave: `${BASE}/vaporwaves-128-mp3`,
+  aesthetic: `${BASE}/vaporwaves-128-mp3`,
+  space: `${BASE}/deepspaceone-128-mp3`,
+  glitch: `${BASE}/cliqhop-128-mp3`,
+  idm: `${BASE}/cliqhop-128-mp3`,
+  tavern: `${BASE}/thistle-128-mp3`,
+  bard: `${BASE}/thistle-128-mp3`,
+  goa: `${BASE}/suburbsofgoa-128-mp3`,
+  psy: `${BASE}/suburbsofgoa-128-mp3`,
 };
 
 // Human-friendly channel names, keyed by URL, for the statusline to show while
@@ -33,6 +44,12 @@ const LABELS = {
   [`${BASE}/defcon-128-mp3`]: 'DEF CON Radio',
   [`${BASE}/fluid-128-mp3`]: 'Fluid',
   [`${BASE}/indiepop-128-mp3`]: 'Indie Pop Rocks',
+  [`${BASE}/secretagent-128-mp3`]: 'Secret Agent',
+  [`${BASE}/vaporwaves-128-mp3`]: 'Vaporwaves',
+  [`${BASE}/deepspaceone-128-mp3`]: 'Deep Space One',
+  [`${BASE}/cliqhop-128-mp3`]: 'cliqhop idm',
+  [`${BASE}/thistle-128-mp3`]: 'ThistleRadio',
+  [`${BASE}/suburbsofgoa-128-mp3`]: 'Suburbs of Goa',
 };
 
 // Visual identity per channel for the statusline equalizer: gradient stops
@@ -101,6 +118,60 @@ const THEMES = {
       { p: 1.0, c: [255, 210, 120] },
     ],
     note: [255, 140, 160],
+  },
+  [`${BASE}/secretagent-128-mp3`]: {
+    // noir: cold steel with a martini-olive accent
+    stops: [
+      { p: 0.0, c: [110, 120, 140] },
+      { p: 0.5, c: [160, 170, 190] },
+      { p: 1.0, c: [230, 235, 245] },
+    ],
+    note: [180, 200, 90],
+  },
+  [`${BASE}/vaporwaves-128-mp3`]: {
+    // mall-at-midnight: pink -> aqua
+    stops: [
+      { p: 0.0, c: [255, 110, 200] },
+      { p: 0.5, c: [190, 130, 240] },
+      { p: 1.0, c: [90, 230, 230] },
+    ],
+    note: [120, 240, 240],
+  },
+  [`${BASE}/deepspaceone-128-mp3`]: {
+    // void: indigo -> starlight
+    stops: [
+      { p: 0.0, c: [80, 80, 180] },
+      { p: 0.5, c: [130, 120, 220] },
+      { p: 1.0, c: [220, 220, 255] },
+    ],
+    note: [200, 200, 255],
+  },
+  [`${BASE}/cliqhop-128-mp3`]: {
+    // circuit board: cyan -> white glitch
+    stops: [
+      { p: 0.0, c: [40, 180, 200] },
+      { p: 0.5, c: [80, 220, 230] },
+      { p: 1.0, c: [220, 250, 255] },
+    ],
+    note: [255, 255, 140],
+  },
+  [`${BASE}/thistle-128-mp3`]: {
+    // tavern: hearth wood and ale
+    stops: [
+      { p: 0.0, c: [140, 100, 60] },
+      { p: 0.5, c: [200, 150, 80] },
+      { p: 1.0, c: [255, 215, 130] },
+    ],
+    note: [150, 220, 120],
+  },
+  [`${BASE}/suburbsofgoa-128-mp3`]: {
+    // psychedelic sunset: magenta -> gold
+    stops: [
+      { p: 0.0, c: [200, 80, 200] },
+      { p: 0.5, c: [240, 130, 120] },
+      { p: 1.0, c: [255, 210, 90] },
+    ],
+    note: [255, 170, 255],
   },
 };
 
