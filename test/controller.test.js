@@ -79,6 +79,7 @@ afterEach(() => {
   delete process.env.VIBECODE_IPC_PATH;
   delete process.env.VIBECODE_NO_WATCHDOG;
   delete process.env.VIBECODE_STATIONS;
+  delete process.env.VIBECODE_TOKEN;
 });
 
 function withPlayer(fn) {
@@ -148,6 +149,28 @@ test('disabled flag suppresses play and status', async () => {
     controller.on(); // removes the flag
     await controller.play();
     assert.strictEqual(state.paused, false, 'play works again after on');
+  });
+});
+
+test('a late play cannot override a newer pause (event serialization)', async () => {
+  await withPlayer(async (state) => {
+    process.env.VIBECODE_TOKEN = '100';
+    await controller.play();
+    assert.strictEqual(state.muted, false, 'token 100: playing');
+
+    process.env.VIBECODE_TOKEN = '200';
+    await controller.pause();
+    assert.strictEqual(state.muted, true, 'token 200: paused');
+
+    // A stale play (older token 150) arriving after the pause must NOT un-mute.
+    process.env.VIBECODE_TOKEN = '150';
+    await controller.play();
+    assert.strictEqual(state.muted, true, 'stale play did not resume');
+
+    // A genuinely newer play (token 300) resumes.
+    process.env.VIBECODE_TOKEN = '300';
+    await controller.play();
+    assert.strictEqual(state.muted, false, 'newer play resumes');
   });
 });
 

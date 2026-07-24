@@ -44,8 +44,12 @@ function log(action, message) {
 
 async function main() {
   const action = process.argv[2];
+  // Stamp the event's order the moment the hook fires, so a detached child
+  // carries the fire-time — not its later spawn time — when it competes with
+  // other events. Inline actions get the same stamp at run time.
+  if (!process.env.VIBECODE_TOKEN) process.env.VIBECODE_TOKEN = String(Date.now());
   if (DETACHED_ACTIONS.has(action) && !process.env.VIBECODE_DIRECT) {
-    log(action, 'hook fired -> detaching');
+    log(action, `hook fired (token ${process.env.VIBECODE_TOKEN}) -> detaching`);
     detach();
     return;
   }

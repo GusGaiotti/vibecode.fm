@@ -56,10 +56,11 @@ function buildArgs(source, volume) {
     // stream transparently (even at EOF) instead of stalling, so a blip
     // recovers in a second or two rather than leaving a long silent gap.
     '--stream-lavf-o=reconnect=1,reconnect_at_eof=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=2',
-    // A generous demuxer cache keeps audio flowing over a brief reconnect.
+    // A modest demuxer cache keeps audio flowing over a brief reconnect while
+    // staying close to real time (a drop recovers in ~1-2s, so ~1 min is plenty).
     '--cache=yes',
-    '--demuxer-max-bytes=32MiB',
-    '--demuxer-readahead-secs=30',
+    '--demuxer-max-bytes=1MiB',
+    '--demuxer-readahead-secs=20',
     `--volume=${volume}`,
     '--pause',
     `--input-ipc-server=${ipcPath()}`,

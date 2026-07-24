@@ -60,6 +60,12 @@ function volumeFile() {
   return path.join(stateDir(), 'volume');
 }
 
+// Latest play/pause intent (a token + action). Serializes racing hook events
+// so the newest one always wins and a late play can't undo a pause.
+function intentFile() {
+  return path.join(stateDir(), 'intent');
+}
+
 // Rolling log of play events, used to gauge how hard the agent is working.
 function activityFile() {
   return path.join(stateDir(), 'activity');
@@ -85,6 +91,7 @@ module.exports = {
   mpvLogFile,
   stationFile,
   volumeFile,
+  intentFile,
   activityFile,
   watchdogFile,
   defaultSource,

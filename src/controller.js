@@ -13,6 +13,7 @@ const {
   logFile,
   stationFile,
   volumeFile,
+  intentFile,
   activityFile,
   watchdogFile,
   debugEnabled,
@@ -34,6 +35,41 @@ function log(message) {
   } catch {
     /* logging must never break anything */
   }
+}
+
+// ---- Intent serialization ----------------------------------------------------
+// Every play/pause carries a token stamped when its hook fired (via the bin
+// entry point). The controller records the newest token as the current intent;
+// any action whose token is older than the recorded one has been superseded by
+// a later event and must not touch the player. This kills the race where a
+// detached play, finishing after a pause, un-mutes the music.
+function actionToken() {
+  return Number(process.env.VIBECODE_TOKEN) || Date.now();
+}
+
+// Record this event as the current intent — but only if it's newer than what's
+// already there, so a late-arriving older event can't clobber a fresher one.
+function recordIntent(token, action) {
+  try {
+    if (token < latestToken()) return;
+    fs.mkdirSync(stateDir(), { recursive: true });
+    fs.writeFileSync(intentFile(), `${token} ${action}`);
+  } catch {
+    /* best-effort */
+  }
+}
+
+function latestToken() {
+  try {
+    return Number(fs.readFileSync(intentFile(), 'utf8').trim().split(' ')[0]) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// True when a newer event has taken over since `token` was stamped.
+function superseded(token) {
+  return latestToken() > token;
 }
 
 // Time an async step and log how long it took (for latency diagnosis).
@@ -109,13 +145,16 @@ async function isHalted() {
 }
 
 // Ramp the volume from `from` to `to` over FADE_MS. Kept short so pause/resume
-// feel immediate while still avoiding clicks.
-async function fade(from, to) {
+// feel immediate while still avoiding clicks. If `guard` is given and a newer
+// event supersedes it mid-fade, the ramp aborts and returns false.
+async function fade(from, to, guard) {
   for (let i = 1; i <= FADE_STEPS; i += 1) {
+    if (guard && superseded(guard)) return false;
     const v = Math.round(from + ((to - from) * i) / FADE_STEPS);
     await send(ipcPath(), { command: ['set_property', 'volume', v] });
     await sleep(FADE_MS / FADE_STEPS);
   }
+  return true;
 }
 
 const fadeTo = (target) => fade(0, target);
@@ -199,11 +238,13 @@ function ensureWatchdog() {
 }
 
 async function play() {
-  log('action=play');
+  const token = actionToken();
+  log(`action=play token=${token}`);
   if (isDisabled()) {
     log('play: disabled flag set, skipping');
     return;
   }
+  recordIntent(token, 'play');
   const t0 = Date.now();
   recordActivity();
   let wasHalted = true;
@@ -218,13 +259,24 @@ async function play() {
       return;
     }
   }
+  // A newer pause may have landed while we were starting/checking: bail before
+  // making a sound so a late play never overrides a more recent pause.
+  if (superseded(token)) {
+    log('play: superseded by a newer event, not resuming');
+    return;
+  }
   if (wasHalted) {
     // Real halted->playing transition. Come back already audible (start at
     // half the target so sound returns on the first frame) then ramp up.
     const target = targetVolume();
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    await timed('fade-in', () => fade(Math.round(target / 2), target));
+    const finished = await timed('fade-in', () => fade(Math.round(target / 2), target, token));
+    if (!finished) {
+      // A pause superseded us mid fade-in: undo the un-mute.
+      await send(ipcPath(), { command: ['set_property', 'mute', true] });
+      log('play: superseded mid fade-in, re-muted');
+    }
   } else if (adaptiveEnabled()) {
     // Already playing: nudge the volume toward the current intensity so the
     // music swells and eases with how hard the agent is working.
@@ -241,8 +293,10 @@ async function fadeOut() {
 }
 
 async function pause() {
+  const token = actionToken();
   const t0 = Date.now();
-  log('action=pause');
+  log(`action=pause token=${token}`);
+  recordIntent(token, 'pause');
   const live = await timed('alive-check', () => alive());
   if (!live) {
     log('pause: no live player, nothing to do');
