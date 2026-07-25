@@ -18,7 +18,7 @@ const fs = require('fs');
 const controller = require('./controller');
 const { stateDir, watchdogFile, logFile, debugEnabled } = require('./paths');
 
-const TICK_MS = 5000;
+const TICK_MS = 30000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -34,28 +34,18 @@ function log(message) {
 
 function idleTimeoutMs() {
   const seconds = Number(process.env.VIBECODE_IDLE_TIMEOUT);
-  // Short by design: this is the safety net that pauses when Claude stops
-  // without a Stop hook (Ctrl+C, a rejected tool, an abandoned turn). Working
-  // turns keep it awake with a play event every few seconds.
-  return (seconds > 0 ? seconds : 20) * 1000;
+  // LONG by design. The watchdog is NOT how the music tracks Claude's state —
+  // Stop/SessionEnd pause it instantly. This is only a janitor that stops a
+  // player left running with no activity for a long time (a turn that ended
+  // without a Stop hook, e.g. Ctrl+C or a usage limit, that the user then
+  // walked away from). Long enough to never fire during real use.
+  return (seconds > 0 ? seconds : 600) * 1000;
 }
 
-// A soft-paused (muted) player keeps its stream warm so resume is instant, but
-// it shouldn't download forever. Give it much longer than a live/aborted turn
-// so answering a question or a permission prompt — even a slow one — still
-// resumes instantly; only a truly abandoned session hits the hard pause.
-const ABANDON_MULTIPLIER = 15; // muted this many idle windows => stop the stream
-
-// Pure decisions, unit-tested. A PLAYING player idle past the window means
-// Claude stopped without a Stop hook (Ctrl+C, rejected tool, abandoned turn):
-// soft-pause it. A MUTED player idle far longer is truly abandoned: stop the
-// stream so it doesn't download forever.
-function shouldSoftPause(status, idleMs, limitMs) {
-  return status === '►' && idleMs >= limitMs;
-}
-
-function shouldHardStop(status, idleMs, limitMs) {
-  return status === '❚❚' && idleMs >= limitMs * ABANDON_MULTIPLIER;
+// Pure decision, unit-tested: a player with no activity for the whole (long)
+// window has been abandoned — stop it.
+function abandoned(idleMs, limitMs) {
+  return idleMs >= limitMs;
 }
 
 function beat() {
@@ -87,22 +77,17 @@ async function run() {
       return cleanup();
     }
     const idleMs = Date.now() - controller.lastActivityMs();
-    const limit = idleTimeoutMs();
-    if (shouldSoftPause(status, idleMs, limit)) {
-      // Claude stopped without a Stop hook — silence, but keep the stream warm
-      // so the next message resumes instantly. Keep watching.
-      log(`idle ${Math.round(idleMs / 1000)}s while playing -> soft pause`);
-      await controller.pause();
-    } else if (shouldHardStop(status, idleMs, limit)) {
-      // Muted and long abandoned: stop the download. Next play respawns us.
-      log(`idle ${Math.round(idleMs / 1000)}s while muted -> stop stream`);
+    if (abandoned(idleMs, idleTimeoutMs())) {
+      // No activity for the whole long window: the player was left running.
+      // Stop it so it doesn't stream forever. The next play respawns us.
+      log(`abandoned ${Math.round(idleMs / 1000)}s, stopping`);
       await controller.hardPause();
       return cleanup();
     }
   }
 }
 
-module.exports = { shouldSoftPause, shouldHardStop, ABANDON_MULTIPLIER, TICK_MS };
+module.exports = { abandoned, TICK_MS };
 
 if (require.main === module) {
   run().catch(() => cleanup());

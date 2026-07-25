@@ -29,7 +29,7 @@ vibecode.fm works with zero configuration. Everything below is optional.
 | `VIBECODE_SPLASH` | on | Set to `0` to drop the splash phrase (keep the icons) |
 | `VIBECODE_SOURCE` | — | Override the audio source (a URL, file, or `.m3u`) |
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Path to your custom stations file |
-| `VIBECODE_IDLE_TIMEOUT` | `20` | Seconds with no working event before the watchdog pauses (covers Ctrl+C, rejected tools, abandoned turns) |
+| `VIBECODE_IDLE_TIMEOUT` | `600` | Seconds with no activity before the watchdog stops an abandoned player (a long janitor, never a mid-work pause) |
 | `VIBECODE_MPV_BIN` | `mpv` | Path to the mpv binary if it isn't on `PATH` |
 | `VIBECODE_MPV_ARGS` | — | Extra flags passed to mpv (e.g. `--ao=pulse`) |
 | `VIBECODE_DEBUG` | off | Set to `1` to log hook timing to `<state>/vibecode.log` |
