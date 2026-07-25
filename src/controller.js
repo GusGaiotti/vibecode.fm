@@ -32,10 +32,21 @@ function log(message) {
   try {
     fs.mkdirSync(stateDir(), { recursive: true });
     const time = new Date().toISOString().slice(11, 23); // HH:MM:SS.mmm
-    fs.appendFileSync(logFile(), `${time} pid=${process.pid} ${message}\n`);
+    const ev = process.env.VIBECODE_EVENT || '-';
+    fs.appendFileSync(logFile(), `${time} [${ev}] ${message}\n`);
   } catch {
     /* logging must never break anything */
   }
+}
+
+// Snapshot of the player's audio state, for tracing what actually changed.
+// Only runs when debug logging is on (the IPC round-trips aren't free).
+async function logAudio(message) {
+  if (!debugEnabled()) return;
+  const mute = await getProp('mute');
+  const paused = await getProp('pause');
+  const idle = await getProp('core-idle');
+  log(`${message} | audio mute=${mute} pause=${paused} core-idle=${idle}`);
 }
 
 // ---- Intent serialization ----------------------------------------------------
@@ -107,7 +118,7 @@ function attentionActive() {
 
 async function attention() {
   const token = actionToken();
-  log(`action=attention token=${token}`);
+  await logAudio(`ATTENTION set token=${token} (keeping music playing)`);
   setAttention();
 }
 
@@ -278,9 +289,9 @@ function ensureWatchdog() {
 
 async function play() {
   const token = actionToken();
-  log(`action=play token=${token}`);
+  await logAudio(`PLAY start token=${token}`);
   if (isDisabled()) {
-    log('play: disabled flag set, skipping');
+    log('PLAY skip: disabled flag set');
     return;
   }
   clearAttention(); // Claude is working again
@@ -331,7 +342,7 @@ async function play() {
     // music swells and eases with how hard the agent is working.
     await send(ipcPath(), { command: ['set_property', 'volume', targetVolume()] });
   }
-  log(`play: done in ${Date.now() - t0}ms -> audio mute=${await getProp('mute')}`);
+  await logAudio(`PLAY done in ${Date.now() - t0}ms`);
   ensureWatchdog();
 }
 
@@ -344,19 +355,19 @@ async function fadeOut() {
 async function pause() {
   const token = actionToken();
   const t0 = Date.now();
-  log(`action=pause token=${token}`);
+  await logAudio(`PAUSE start token=${token}`);
   clearAttention(); // it's the user's turn now, not a mid-turn prompt
   recordIntent(token, 'pause');
   const live = await timed('alive-check', () => alive());
   if (!live) {
-    log('pause: no live player, nothing to do');
+    log('PAUSE skip: no live player');
     return;
   }
   // Soft pause: mute at once (mpv's mute is click-free) so the music stops the
   // instant Claude asks, and keep the stream flowing so the next play is
   // immediate. The watchdog hard-pauses after the idle timeout.
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
-  log(`pause: done in ${Date.now() - t0}ms -> audio mute=${await getProp('mute')}`);
+  await logAudio(`PAUSE done in ${Date.now() - t0}ms`);
   ensureWatchdog();
 }
 
