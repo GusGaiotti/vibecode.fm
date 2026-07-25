@@ -274,10 +274,16 @@ function ensureWatchdog() {
     /* no heartbeat yet: spawn one */
   }
   try {
+    // The watchdog is long-lived, so it must NOT inherit this hook's one-shot
+    // token/event — each pause it issues should stamp its own fresh time.
+    const env = { ...process.env };
+    delete env.VIBECODE_TOKEN;
+    delete env.VIBECODE_EVENT;
     const child = spawn(process.execPath, [path.join(__dirname, 'watchdog.js')], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
+      env,
     });
     child.on('error', () => {});
     child.unref();
