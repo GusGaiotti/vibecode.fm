@@ -2,11 +2,11 @@
 
 [English](README.md) · [Português](README.pt-BR.md) · **Español**
 
-**Música que suena mientras Claude Code trabaja y se pausa cuando es tu turno.**
+**Una banda sonora para tu agente de código — suena mientras Claude Code trabaja y se detiene en el instante en que es tu turno.**
 
-Claude empieza a procesar — la música arranca. Te devuelve el control — la música se detiene. Una
-barra de estado temática muestra lo que pasa de un vistazo, y todo sigue el estado del agente, sin
-que tengas que tocar nada.
+Claude empieza a trabajar, la música entra. Te devuelve el turno, la música se detiene. *Escuchas*
+cuándo el agente está ocupado y cuándo te necesita, sin estar pegado a la pantalla. Una barra de
+estado temática muestra la pista, la estación y el estado — y todo funciona solo.
 
 <!-- demo: agregar capturas aquí — sonando (synthwave), el tema hacker, y un turno en pausa -->
 

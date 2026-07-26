@@ -2,11 +2,11 @@
 
 **English** · [Português](README.pt-BR.md) · [Español](README.es.md)
 
-**Music that plays while Claude Code works and pauses when it's your turn.**
+**A soundtrack for your coding agent — plays while Claude Code works, stops the moment it's your turn.**
 
-Claude starts crunching — the music starts. It hands back to you — the music stops. A
-themed status line shows what's happening at a glance, and the whole thing follows the
-agent's state so you never have to touch it.
+Claude starts working, the music comes in. It hands the turn back to you, the music stops. You
+*hear* when the agent is busy and when it needs you, so you're not glued to the screen. A themed
+status line shows the current track, station and state — and it all runs on its own.
 
 <img width="1882" height="141" alt="Captura de tela 2026-07-26 151637" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
 
