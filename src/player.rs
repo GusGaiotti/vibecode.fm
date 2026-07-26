@@ -69,14 +69,14 @@ fn build_args(source: &str, volume: i64) -> Vec<String> {
 }
 
 #[cfg(windows)]
-fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
+pub fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
     use std::os::windows::process::CommandExt;
     cmd.creation_flags(0x0800_0008); // DETACHED_PROCESS | CREATE_NO_WINDOW
     cmd.spawn().map(|_| ())
 }
 
 #[cfg(unix)]
-fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
+pub fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
     use std::os::unix::process::CommandExt;
     cmd.process_group(0);
     cmd.spawn().map(|_| ())

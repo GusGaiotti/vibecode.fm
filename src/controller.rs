@@ -151,22 +151,8 @@ fn ensure_watchdog() {
     cmd.stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    let _ = spawn_detached(&mut cmd);
+    let _ = player::spawn_detached(&mut cmd);
     log("watchdog: spawned");
-}
-
-#[cfg(windows)]
-fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
-    use std::os::windows::process::CommandExt;
-    cmd.creation_flags(0x0800_0008);
-    cmd.spawn().map(|_| ())
-}
-
-#[cfg(unix)]
-fn spawn_detached(cmd: &mut Command) -> std::io::Result<()> {
-    use std::os::unix::process::CommandExt;
-    cmd.process_group(0);
-    cmd.spawn().map(|_| ())
 }
 
 pub fn play() {

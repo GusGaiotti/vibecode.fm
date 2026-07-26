@@ -1,5 +1,7 @@
 # vibecode.fm
 
+**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
+
 **Music that plays while Claude Code works and pauses when it's your turn.**
 
 Claude starts crunching — the music starts. It hands back to you — the music stops. A
@@ -32,7 +34,7 @@ session; if mpv isn't installed the plugin does nothing, silently.
 
 ```sh
 brew install mpv                 # macOS
-sudo apt install mpv             # Debian / Ubuntu / Raspberry Pi OS
+sudo apt install mpv             # Debian / Ubuntu
 winget install shinchiro.mpv     # Windows
 ```
 
