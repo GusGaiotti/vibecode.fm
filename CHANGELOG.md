@@ -22,8 +22,9 @@ First public release.
   agent is working; fades on every transition.
 - Resilient streaming: transparent reconnects, a demuxer cache that hides brief drops, and
   a device-keep-alive flag so resume is instant.
-- Zero runtime dependencies; Windows/macOS/Linux/WSL; test suite against a fake mpv, run on
-  all three platforms in CI.
+- Self-contained native binary written in Rust — no runtime or interpreter required, one
+  `serde_json` dependency. Windows/macOS/Linux/WSL; `cargo fmt`, `clippy` and the test suite
+  run on all three platforms in CI.
 
 ### Security
 - Stream track titles (untrusted metadata) are stripped of control/escape characters before

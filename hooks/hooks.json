@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" play UserPromptSubmit",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play UserPromptSubmit",
             "timeout": 10
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" play PreToolUse",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play PreToolUse",
             "timeout": 10
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" play PostToolUse",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play PostToolUse",
             "timeout": 10
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" play Notification",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play Notification",
             "timeout": 10
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" play PermissionRequest",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play PermissionRequest",
             "timeout": 10
           }
         ]
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" pause Stop",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" pause Stop",
             "timeout": 10
           }
         ]
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" pause StopFailure",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" pause StopFailure",
             "timeout": 10
           }
         ]
@@ -84,7 +84,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" pause SessionEnd",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" pause SessionEnd",
             "timeout": 10
           }
         ]

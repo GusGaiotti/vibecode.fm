@@ -21,12 +21,11 @@ background [mpv](https://mpv.io) instance over its JSON IPC channel:
 | Claude finishes the turn | ⏸ pauses |
 | Session ends | ⏸ pauses |
 
-It's a single, zero-dependency Node script. Hooks exit 0 no matter what and never break a
+It's a single, dependency-free native binary. Hooks exit 0 no matter what and never break a
 session; if mpv isn't installed the plugin does nothing, silently.
 
 ## Requirements
 
-- **Node.js 18+** — you already have it, Claude Code runs on Node.
 - **[mpv](https://mpv.io)** on your `PATH`:
 
 ```sh
@@ -35,7 +34,8 @@ sudo apt install mpv             # Debian / Ubuntu / Raspberry Pi OS
 winget install shinchiro.mpv     # Windows
 ```
 
-One codebase for **Windows, macOS, Linux and WSL**; the test suite runs on all three in CI.
+That's it — no runtime, no interpreter. The binary is self-contained. One codebase for
+**Windows, macOS, Linux and WSL**; the test suite runs on all three in CI.
 
 ## Install
 
@@ -46,13 +46,20 @@ In Claude Code:
 /plugin install vibecode-fm@vibecode-fm
 ```
 
-Point your status line at the bundled example (in `settings.json`):
+Build the binary (needs a [Rust toolchain](https://rustup.rs)):
+
+```sh
+cargo build --release        # produces target/release/vibecode-fm
+```
+
+Drop the binary at `bin/vibecode-fm` (or `bin/vibecode-fm.exe` on Windows) inside the plugin,
+then point your status line at it (in `settings.json`):
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/plugins/marketplaces/vibecode-fm/examples/statusline.js"
+    "command": "~/.claude/plugins/marketplaces/vibecode-fm/bin/vibecode-fm statusline"
   }
 }
 ```
@@ -150,8 +157,13 @@ echo 'export VIBECODE_MPV_ARGS="--ao=pulse"' >> ~/.bashrc
 
 ## Development
 
-`node --test` runs the suite against a fake mpv, so no audio hardware is needed. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+```sh
+cargo test           # unit tests, no audio hardware needed
+cargo fmt --check    # formatting
+cargo clippy -- -D warnings
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

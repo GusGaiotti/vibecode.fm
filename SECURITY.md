@@ -9,14 +9,15 @@ filing a public issue. You'll get a response within a few days.
 
 vibecode.fm is a local audio plugin with a deliberately small attack surface:
 
-- **Zero runtime dependencies** — only Node's standard library, so there's no third-party
-  supply chain.
-- **No network listeners, no credentials, no telemetry, no `eval`/dynamic `require`.**
+- **One dependency** — `serde_json` for parsing mpv's IPC replies; everything else is the
+  Rust standard library, so the supply chain is tiny.
+- **No network listeners, no credentials, no telemetry, no dynamic code loading.**
+- **Memory-safe** — the binary is safe Rust with no `unsafe` blocks.
 - **IPC is local only** — a Unix socket (or Windows named pipe) namespaced per user in the
   runtime/temp directory. It is never exposed to the network.
 - **Processes are spawned with argument arrays, never a shell string**, so there's no shell
   injection when launching mpv or the watchdog.
-- **Hooks are fixed commands.** Claude Code invokes `bin/vibecode.js <action> <event>` with
+- **Hooks are fixed commands.** Claude Code invokes `bin/vibecode-fm <action> <event>` with
   constant strings from `hooks.json` — no user input reaches the dispatch.
 - **Untrusted stream metadata is sanitized.** Track titles coming from the radio stream have
   control and escape characters stripped before they reach the terminal, preventing ANSI

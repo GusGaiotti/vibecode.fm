@@ -1,0 +1,22 @@
+[package]
+name = "vibecode-fm"
+version = "0.6.0"
+edition = "2021"
+authors = ["Gustavo Gaiotti"]
+description = "Music that plays while Claude Code works and pauses when it's your turn."
+license = "MIT"
+repository = "https://github.com/GusGaiotti/vibecode.fm"
+
+[[bin]]
+name = "vibecode-fm"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

@@ -4,7 +4,7 @@ allowed-tools: Bash
 argument-hint: [vibe]
 ---
 
-!`node "${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js" radio "$ARGUMENTS"`
+!`"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm" radio "$ARGUMENTS"`
 
 The station was set to "$ARGUMENTS" (if it's a known vibe) and playback started.
 Known vibes: chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker,

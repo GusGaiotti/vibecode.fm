@@ -13,6 +13,6 @@ seventies, reggae, dubstep, lounge, folk
 
 Then switch to it by running (replace <vibe> with your pick):
 
-  node "${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js" radio <vibe>
+  "${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm" radio <vibe>
 
 Then tell the user, in one short line, which vibe you picked and why.
