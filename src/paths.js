@@ -30,6 +30,12 @@ function disabledFlag() {
   return path.join(stateDir(), 'disabled');
 }
 
+// Present = focus mode is OFF, i.e. the music plays continuously and never
+// pauses when it's your turn (`/focus off`).
+function noFocusFlag() {
+  return path.join(stateDir(), 'nofocus');
+}
+
 function logFile() {
   return process.env.VIBECODE_LOG || path.join(stateDir(), 'vibecode.log');
 }
@@ -93,6 +99,7 @@ module.exports = {
   stateDir,
   ipcPath,
   disabledFlag,
+  noFocusFlag,
   logFile,
   debugEnabled,
   mpvLogFile,

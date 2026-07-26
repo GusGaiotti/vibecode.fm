@@ -63,6 +63,9 @@ async function main() {
     case 'volume':
       await controller.setVolume(process.argv[3]);
       break;
+    case 'focus':
+      await controller.focus(process.argv[3]);
+      break;
     case 'on':
       controller.on();
       break;

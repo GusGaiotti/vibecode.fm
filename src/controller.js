@@ -10,6 +10,7 @@ const {
   ipcPath,
   stateDir,
   disabledFlag,
+  noFocusFlag,
   logFile,
   stationFile,
   volumeFile,
@@ -135,6 +136,10 @@ function volume() {
   return Number(process.env.VIBECODE_VOLUME) || 70;
 }
 const isDisabled = () => fs.existsSync(disabledFlag());
+
+// Focus mode (on by default): the music pauses when it's your turn. With focus
+// off (`/focus off`) it plays continuously and pause becomes a no-op.
+const focusOn = () => !fs.existsSync(noFocusFlag());
 
 const ADAPTIVE_SPREAD = 15;
 
@@ -349,6 +354,10 @@ async function pause() {
   const token = actionToken();
   const t0 = Date.now();
   await logAudio(`PAUSE start token=${token}`);
+  if (!focusOn()) {
+    log('PAUSE skip: focus mode off (music plays continuously)');
+    return;
+  }
   clearAttention(); // it's the user's turn now, not a mid-turn prompt
   recordIntent(token, 'pause');
   const live = await timed('alive-check', () => alive());
@@ -469,6 +478,24 @@ function stationTheme() {
   }
 }
 
+// Toggle focus mode. `off` = play continuously (and start now); `on` = pause
+// when it's your turn again.
+async function focus(arg) {
+  fs.mkdirSync(stateDir(), { recursive: true });
+  if (arg === 'off') {
+    fs.writeFileSync(noFocusFlag(), '');
+    log('focus: off');
+    await play();
+  } else {
+    try {
+      fs.unlinkSync(noFocusFlag());
+    } catch {
+      /* already on */
+    }
+    log('focus: on');
+  }
+}
+
 function on() {
   log('action=on');
   try {
@@ -503,6 +530,7 @@ module.exports = {
   radio,
   next,
   setVolume,
+  focus,
   status,
   track,
   on,

@@ -174,6 +174,19 @@ test('a late play cannot override a newer pause (event serialization)', async ()
   });
 });
 
+test('focus off makes pause a no-op (music plays continuously)', async () => {
+  await withPlayer(async (state) => {
+    await controller.play();
+    assert.strictEqual(state.muted, false, 'playing');
+    await controller.focus('off');
+    await controller.pause();
+    assert.strictEqual(state.muted, false, 'focus off: pause did not mute');
+    await controller.focus('on');
+    await controller.pause();
+    assert.strictEqual(state.muted, true, 'focus on: pause mutes again');
+  });
+});
+
 test('pause without a player is a silent no-op', async () => {
   await controller.pause();
   assert.strictEqual(await controller.status(), '');
