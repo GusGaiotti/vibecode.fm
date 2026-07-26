@@ -2,13 +2,15 @@
 
 **English** · [Português](README.pt-BR.md) · [Español](README.es.md)
 
+<img width="400" height="400" alt="Gemini_Generated_Image_moy0q5moy0q5moy0" src="https://github.com/user-attachments/assets/ea5b748b-9fd1-47c3-9f9a-910ccc3ec20f" />
+
+
+
 **A soundtrack for your coding agent — plays while Claude Code works, stops the moment it's your turn.**
 
 Claude starts working, the music comes in. It hands the turn back to you, the music stops. You
 *hear* when the agent is busy and when it needs you, so you're not glued to the screen. A themed
 status line shows the current track, station and state — and it all runs on its own.
-
-<img width="1882" height="141" alt="Captura de tela 2026-07-26 151637" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
 
 ## How it works
 
