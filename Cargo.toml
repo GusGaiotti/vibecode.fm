@@ -2,10 +2,15 @@
 name = "vibecode-fm"
 version = "0.6.0"
 edition = "2021"
+rust-version = "1.74"
 authors = ["Gustavo Gaiotti"]
 description = "Music that plays while Claude Code works and pauses when it's your turn."
 license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/GusGaiotti/vibecode.fm"
 repository = "https://github.com/GusGaiotti/vibecode.fm"
+keywords = ["claude-code", "mpv", "music", "statusline", "hooks"]
+categories = ["command-line-utilities", "multimedia::audio"]
 
 [[bin]]
 name = "vibecode-fm"

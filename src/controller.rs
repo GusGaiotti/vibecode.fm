@@ -133,8 +133,7 @@ fn ensure_watchdog() {
         if let Ok(modified) = meta.modified() {
             if SystemTime::now()
                 .duration_since(modified)
-                .map(|d| d.as_secs() < 45)
-                .unwrap_or(false)
+                .is_ok_and(|d| d.as_secs() < 45)
             {
                 return;
             }
@@ -329,18 +328,6 @@ pub fn track() -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sanitize_strips_control_and_escape_chars() {
-        let out = sanitize_title("Evil\x1b[31m\x07\x00 Song");
-        assert!(!out.chars().any(|c| c.is_control()));
-        assert_eq!(out, "Evil[31m Song");
-    }
-}
-
 pub fn station_label() -> Option<String> {
     stations::label(&current_station()?)
 }
@@ -363,4 +350,16 @@ pub fn off() {
     let _ = fs::remove_file(paths::ipc_path());
     let _ = fs::create_dir_all(paths::state_dir());
     let _ = fs::write(paths::disabled_flag(), "");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_strips_control_and_escape_chars() {
+        let out = sanitize_title("Evil\x1b[31m\x07\x00 Song");
+        assert!(!out.chars().any(|c| c.is_control()));
+        assert_eq!(out, "Evil[31m Song");
+    }
 }

@@ -45,7 +45,7 @@ pub fn send(command: &Value) -> Option<Value> {
     thread::spawn(move || {
         let _ = tx.send(exchange(cmd));
     });
-    match rx.recv_timeout(Duration::from_millis(1000)) {
+    match rx.recv_timeout(Duration::from_secs(1)) {
         Ok(Ok(v)) => v,
         _ => None,
     }
