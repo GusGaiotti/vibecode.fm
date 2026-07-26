@@ -6,7 +6,7 @@ Claude starts crunching — the music starts. It hands back to you — the music
 themed status line shows what's happening at a glance, and the whole thing follows the
 agent's state so you never have to touch it.
 
-<!-- demo: add screenshots here — playing (synthwave), the hacker theme, and "Your move" -->
+<!-- demo: add screenshots here — playing (synthwave), the hacker theme, and a paused turn -->
 
 ## How it works
 
@@ -76,7 +76,6 @@ Submit a prompt and the music starts.
 | `/vibecode-fm:volume <up\|down\|0-100>` | Set the volume |
 | `/vibecode-fm:focus <on\|off>` | On (default): pause when it's your turn. Off: play non-stop |
 | `/vibecode-fm:on` / `:off` | Enable / disable the plugin |
-| `/vibecode-fm:dance` | A little dancer for the current station 🕺 |
 | `/vibecode-fm:help` | Command + settings reference |
 
 **Vibes:** chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker, defcon,
@@ -139,7 +138,7 @@ These are Claude Code / terminal constraints, not bugs — documented for honest
 - **Ctrl+C doesn't pause.** Interrupting a turn fires no hook, so the plugin can't react;
   the music pauses on the next turn that ends normally.
 - **The status line updates on Claude Code's repaint schedule**, not on demand, so the
-  `▌▐ Your move!` transition can lag a beat. The sprite animation is time-based for the same
+  play/pause transition can lag a beat. The sprite animation is time-based for the same
   reason — it can't be synced to the audio.
 - **A long command you approve stays quiet until it finishes** — there's no hook for "tool
   started after approval", so the music resumes when the tool ends. Short tools resume

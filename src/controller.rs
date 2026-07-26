@@ -360,21 +360,6 @@ pub fn focus(arg: Option<&str>) {
     }
 }
 
-pub fn dance() -> String {
-    let crews = [
-        ["ヽ(⌐■_■)ノ♪", "♪ヽ(■_■⌐)ノ", "ヽ(⌐■_■)ノ♬"],
-        ["♪┏(・o・)┛", "┗(・o・)┓♪", "♪┏(・o・)┛"],
-        ["(♪)┏(＾0＾)┛", "┗(＾0＾)┓(♫)", "(♬)┏(＾0＾)┛"],
-        ["⟨♪⟩ ᕕ( ᐛ )ᕗ", "ᕕ( ᐛ )ᕗ ⟨♫⟩", "⟨♬⟩ ᕕ( ᐛ )ᕗ"],
-    ];
-    let idx = (now_ms() as usize / 7) % crews.len();
-    let label = station_label().unwrap_or_else(|| "vibecode.fm".into());
-    format!(
-        "\n   {}\n\n   dancing to {label} — keep coding ♪\n",
-        crews[idx].join("   ")
-    )
-}
-
 pub fn status() -> String {
     if is_disabled() {
         return String::new();

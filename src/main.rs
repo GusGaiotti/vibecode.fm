@@ -37,7 +37,6 @@ fn main() {
         "next" => controller::next(),
         "volume" => controller::set_volume(arg),
         "focus" => controller::focus(arg),
-        "dance" => print!("{}", controller::dance()),
         "on" => controller::on(),
         "off" => controller::off(),
         "watchdog" => watchdog::run(),

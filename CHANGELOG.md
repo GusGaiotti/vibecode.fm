@@ -16,8 +16,7 @@ First public release.
   `VIBECODE_SPLASH` tune it down.
 - 26 curated SomaFM vibes, each with its own colours, icons and phrases; user-defined
   stations via `~/.vibecode-fm/stations.json`.
-- Commands: `/vibe` (DJ mode), `/radio`, `/next`, `/volume`, `/focus`, `/on`, `/off`,
-  `/help`.
+- Commands: `/vibe` (DJ mode), `/radio`, `/next`, `/volume`, `/focus`, `/on`, `/off`, `/help`.
 - Focus mode (`/focus off`) plays continuously; adaptive volume swells with how hard the
   agent is working; fades on every transition.
 - Resilient streaming: transparent reconnects, a demuxer cache that hides brief drops, and
