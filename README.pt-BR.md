@@ -2,6 +2,9 @@
 
 [English](README.md) · **Português** · [Español](README.es.md)
 
+<img width="400" height="400" alt="Gemini_Generated_Image_moy0q5moy0q5moy0" src="https://github.com/user-attachments/assets/ea5b748b-9fd1-47c3-9f9a-910ccc3ec20f" />
+
+
 **Uma trilha sonora pro seu agente de código — toca enquanto o Claude Code trabalha e para no instante em que é a sua vez.**
 
 O Claude começa a trabalhar, a música entra. Ele te devolve o turno, a música para. Você *ouve*
