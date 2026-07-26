@@ -2,9 +2,6 @@
 
 const net = require('net');
 
-// Send one JSON command to mpv's IPC endpoint and resolve its reply object,
-// or null on any failure (no player, timeout, socket error). Never throws:
-// the whole plugin degrades silently when there is nothing to talk to.
 function send(ipcPath, command, timeoutMs = 1000) {
   return new Promise((resolve) => {
     let settled = false;
@@ -27,9 +24,6 @@ function send(ipcPath, command, timeoutMs = 1000) {
 
     socket.on('data', (chunk) => {
       buffer += chunk.toString();
-      // mpv may emit event lines first; the reply is the line with an "error"
-      // field. Only complete lines are parsed — the tail stays buffered so a
-      // reply split across TCP chunks never turns into a bogus parse failure.
       const lines = buffer.split('\n');
       buffer = lines.pop();
       for (const line of lines) {

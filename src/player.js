@@ -15,11 +15,9 @@ function log(message) {
     const time = new Date().toISOString().slice(11, 23);
     fs.appendFileSync(logFile(), `${time} pid=${process.pid} ${message}\n`);
   } catch {
-    /* logging must never break anything */
   }
 }
 
-// Wait for the player behind the socket/pipe to answer, up to ~3s.
 async function waitAlive() {
   for (let i = 0; i < 30; i += 1) {
     if (await alive()) {
@@ -33,11 +31,9 @@ async function waitAlive() {
 }
 
 function mpvBin() {
-  // spawn() resolves mpv.exe via PATHEXT on Windows.
   return process.env.VIBECODE_MPV_BIN || 'mpv';
 }
 
-// Is a player behind the socket/pipe and responding?
 async function alive() {
   const reply = await send(ipcPath(), { command: ['get_property', 'mpv-version'] });
   return !!(reply && reply.error === 'success');
@@ -52,20 +48,10 @@ function buildArgs(source, volume) {
     '--keep-open=yes',
     '--loop-playlist=inf',
     '--network-timeout=15',
-    // Radio streams drop or end prematurely now and then; reconnect the HTTP
-    // stream transparently (even at EOF) instead of stalling, so a blip
-    // recovers in a second or two rather than leaving a long silent gap.
     '--stream-lavf-o=reconnect=1,reconnect_at_eof=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=2',
-    // A modest demuxer cache keeps audio flowing over a brief reconnect while
-    // staying close to real time (a drop recovers in ~1-2s, so ~1 min is plenty).
     '--cache=yes',
     '--demuxer-max-bytes=1MiB',
     '--demuxer-readahead-secs=20',
-    // Keep the audio device engaged during silence. Receivers, HDMI outputs and
-    // Bluetooth headsets go into standby when a stream goes quiet and take
-    // several seconds to wake up — which shows up as a long silent gap on
-    // resume even though mpv is already playing. Streaming continuous silence
-    // holds the device open so resume is instant.
     '--audio-stream-silence=yes',
     '--audio-wait-open=1',
     `--volume=${volume}`,
@@ -75,7 +61,6 @@ function buildArgs(source, volume) {
   if (debugEnabled()) {
     args.push(`--log-file=${mpvLogFile()}`, '--msg-level=all=status');
   }
-  // Environment-specific flags, e.g. VIBECODE_MPV_ARGS="--ao=pulse" on WSL.
   if (process.env.VIBECODE_MPV_ARGS) {
     for (const flag of process.env.VIBECODE_MPV_ARGS.split(/\s+/)) {
       if (flag) args.push(flag);
@@ -85,10 +70,6 @@ function buildArgs(source, volume) {
   return args;
 }
 
-// Launch mpv detached so it outlives the hook process, then wait for the
-// socket to come up. Returns true once the player answers, false otherwise.
-// Hooks run in parallel, so a lock file keeps two of them from racing a
-// second mpv into existence (the loser just waits for the winner's player).
 async function start(source, volume) {
   const lockFile = path.join(stateDir(), 'starting');
   try {
@@ -96,21 +77,17 @@ async function start(source, volume) {
       return waitAlive();
     }
   } catch {
-    /* no fresh lock: we are the starter */
   }
   try {
     fs.mkdirSync(stateDir(), { recursive: true });
     fs.writeFileSync(lockFile, String(process.pid));
   } catch {
-    /* locking is best-effort */
   }
 
-  // On Unix a stale socket file blocks the new server; clear it first.
   if (process.platform !== 'win32') {
     try {
       fs.unlinkSync(ipcPath());
     } catch {
-      /* nothing to remove */
     }
   }
   try {
@@ -120,7 +97,6 @@ async function start(source, volume) {
       stdio: 'ignore',
       windowsHide: true,
     });
-    // mpv missing (ENOENT) surfaces here; swallow so nothing crashes.
     child.on('error', (e) => log(`  start: spawn error ${e && e.code}`));
     child.unref();
     return await waitAlive();
@@ -130,7 +106,6 @@ async function start(source, volume) {
     try {
       fs.unlinkSync(lockFile);
     } catch {
-      /* already gone */
     }
   }
 }

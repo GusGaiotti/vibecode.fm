@@ -1,26 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 
-// Example Claude Code statusline for vibecode.fm: icon + track on the left,
-// themed sprites drifting around a rotating splash phrase in the centre, model
-// on the right. The sprites aren't synced to the audio (the statusline can't
-// repaint fast enough) — they move with time and with how busy the agent is.
-// Point settings.json at it:
-//   "statusLine": { "type": "command", "command": "node /path/to/examples/statusline.js" }
-
 const path = require('path');
 const controller = require(path.join(__dirname, '..', 'src', 'controller'));
 
-// ---- ANSI helpers (truecolor) ------------------------------------------------
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
 const fg = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;
 const paint = (s, r, g, b, bold) => `${bold ? BOLD : ''}${fg(r, g, b)}${s}${RESET}`;
 
-// ---- Config toggles (env vars, documented in the README) ---------------------
-// VIBECODE_MINIMAL=1  just the icon + title (no sprites, no phrase)
-// VIBECODE_SPRITES=0  drop the drifting icons (keep the splash phrase)
-// VIBECODE_SPLASH=0   drop the splash phrase (keep the icons)
 function envOff(name) {
   return ['0', 'false', 'off', 'no'].includes(String(process.env[name] || '').toLowerCase());
 }
@@ -30,7 +18,6 @@ function envOn(name) {
 const spritesEnabled = () => !envOn('VIBECODE_MINIMAL') && !envOff('VIBECODE_SPRITES');
 const splashEnabled = () => !envOn('VIBECODE_MINIMAL') && !envOff('VIBECODE_SPLASH');
 
-// ---- Theme fallback (chill / lofi / Groove Salad and custom stations) --------
 const DEFAULT_THEME = {
   tag: 'chill',
   stops: [
@@ -38,7 +25,7 @@ const DEFAULT_THEME = {
     { p: 0.5, c: [130, 205, 120] },
     { p: 1.0, c: [240, 200, 95] },
   ],
-  sprites: ['❀', '♪', '✿', '♫', '❁', '♬', '♩', '✧'], // flowers & notes
+  sprites: ['❀', '♪', '✿', '♫', '❁', '♬', '♩', '✧'],
 };
 
 function gradientColor(stops, t) {
@@ -54,8 +41,6 @@ function gradientColor(stops, t) {
   return stops[stops.length - 1].c;
 }
 
-// Colour a string letter-by-letter across the theme gradient; `animate` drifts
-// the gradient over time so the phrase shimmers.
 function gradientText(text, stops, animate) {
   const drift = animate ? Date.now() / 2200 : 0;
   let out = BOLD;
@@ -67,8 +52,6 @@ function gradientText(text, stops, animate) {
   return out + RESET;
 }
 
-// ---- Splash phrases ----------------------------------------------------------
-// Programming jokes and philosophical puns, per station vibe. English, short.
 const PHRASES = {
   chill: [
     'Compiling good vibes...',
@@ -146,7 +129,6 @@ const PHRASES = {
   ],
 };
 
-// Philosophical puns mixed into every theme.
 const UNIVERSAL = [
   'I refactor, therefore I am',
   'To be, or not to be null',
@@ -163,16 +145,13 @@ function pickPhrase(theme) {
   return pool[i];
 }
 
-// ---- Sprite run --------------------------------------------------------------
-// A drifting run of the theme's sprites `cols` wide. `phase` offsets the left
-// and right runs so the two sides don't mirror each other.
 function spriteRun(cols, intensity, theme, moving, phase) {
   if (cols <= 0) return '';
   const sprites = theme.sprites && theme.sprites.length ? theme.sprites : DEFAULT_THEME.sprites;
   const stops = theme.stops || DEFAULT_THEME.stops;
-  const gap = moving ? Math.max(1, 3 - Math.round(intensity * 2)) : 3; // busier => denser
+  const gap = moving ? Math.max(1, 3 - Math.round(intensity * 2)) : 3;
   const period = gap + 1;
-  const speed = 3 + intensity * 12; // more frenetic the harder the agent works
+  const speed = 3 + intensity * 12;
   const offset = (moving ? Math.floor((Date.now() / 1000) * speed) : 0) + phase;
   const flow = Date.now() / 1400;
   let out = '';
@@ -194,7 +173,6 @@ function spriteRun(cols, intensity, theme, moving, phase) {
   return out;
 }
 
-// ---- Title helpers -----------------------------------------------------------
 const TITLE_MAX = 28;
 
 function marquee(text, max) {
@@ -233,17 +211,12 @@ async function displayTitle() {
   return controller.stationLabel() || 'vibecode.fm';
 }
 
-// Build the centre band: a gradient splash phrase in the middle, themed sprites
-// drifting in from both sides, and a music note anchoring each far end as a
-// signature that this is a music feature. Respects the sprites/splash toggles
-// and degrades gracefully as width shrinks.
 function centreBand(width, phraseText, intensity, theme, moving) {
   if (width <= 0) return '';
   const stops = theme.stops || DEFAULT_THEME.stops;
   const sprites = spritesEnabled();
   const splash = splashEnabled() && phraseText;
 
-  // Music-note anchors on the extreme ends (only when icons are on).
   let lAnchor = '';
   let rAnchor = '';
   let inner = width;
@@ -281,25 +254,21 @@ async function main() {
     const parsed = JSON.parse(input);
     if (parsed.model && parsed.model.display_name) model = parsed.model.display_name;
   } catch {
-    /* keep default */
   }
 
   const width = Number(process.env.COLUMNS) || 80;
   const icon = await controller.status();
   const [mr, mg, mb] = modelColor(model);
-  let out = paint(model, mr, mg, mb); // idle: just the model, tinted
+  let out = paint(model, mr, mg, mb);
 
   if (icon === '►' || icon === '❚❚') {
     const moving = icon === '►';
     const theme = controller.stationTheme() || DEFAULT_THEME;
     const stops = theme.stops || DEFAULT_THEME.stops;
-    // The left is a stable ♪ + the track title — it only changes when the song
-    // does, never on play/pause, so it can't look out of sync. Play/pause is
-    // carried by the audio and by whether the sprites drift or sit dim.
     const title = marquee(await displayTitle(), TITLE_MAX);
     const [tr, tg, tb] = gradientColor(stops, 0.9);
-    const head = `${paint('♪', ...gradientColor(stops, 0.2), true)} ${paint(title, tr, tg, tb, true)}`;
-    const headLen = 2 + title.length; // glyph + space + title
+    const head = `📻 ${paint(title, tr, tg, tb, true)}`;
+    const headLen = 3 + title.length;
     const midW = Math.max(0, width - headLen - model.length - 2);
     const band = centreBand(midW, pickPhrase(theme), controller.activityLevel(), theme, moving);
     out = `${head} ${band} ${paint(model, mr, mg, mb)}`;

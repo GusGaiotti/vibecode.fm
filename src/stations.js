@@ -4,9 +4,6 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-// Curated SomaFM stations (free, legal, no login) mapped to moods. Several
-// aliases point at the same channel so `/vibecode-fm:radio rock` and
-// `... indie` both work.
 const BASE = 'https://ice1.somafm.com';
 
 const STATIONS = {
@@ -46,8 +43,6 @@ const STATIONS = {
   psy: `${BASE}/suburbsofgoa-128-mp3`,
 };
 
-// Human-friendly channel names, keyed by URL, for the statusline to show while
-// the live track title (icy-title) hasn't arrived yet.
 const LABELS = {
   [`${BASE}/groovesalad-128-mp3`]: 'Groove Salad',
   [`${BASE}/dronezone-128-mp3`]: 'Drone Zone',
@@ -71,14 +66,9 @@ const LABELS = {
   [`${BASE}/folkfwd-128-mp3`]: 'Folk Forward',
 };
 
-// Visual identity per channel for the statusline: a colour gradient, a `tag`
-// that selects the splash phrases, and a themed set of single-width sprites
-// (music-note heavy) that drift across the line with the music. Stations
-// without a theme fall back to the statusline's default.
 const THEMES = {
   [`${BASE}/dronezone-128-mp3`]: {
     tag: 'space',
-    // deep-space blues
     stops: [
       { p: 0.0, c: [70, 130, 220] },
       { p: 0.5, c: [110, 160, 240] },
@@ -88,7 +78,6 @@ const THEMES = {
   },
   [`${BASE}/metal-128-mp3`]: {
     tag: 'metal',
-    // molten reds
     stops: [
       { p: 0.0, c: [180, 60, 40] },
       { p: 0.5, c: [235, 110, 40] },
@@ -98,7 +87,6 @@ const THEMES = {
   },
   [`${BASE}/sonicuniverse-128-mp3`]: {
     tag: 'jazz',
-    // smoky amber jazz club
     stops: [
       { p: 0.0, c: [160, 110, 60] },
       { p: 0.5, c: [220, 160, 70] },
@@ -108,7 +96,6 @@ const THEMES = {
   },
   [`${BASE}/u80s-128-mp3`]: {
     tag: 'synthwave',
-    // synthwave sunset: cyan -> purple -> hot pink
     stops: [
       { p: 0.0, c: [66, 210, 230] },
       { p: 0.5, c: [150, 100, 240] },
@@ -118,7 +105,6 @@ const THEMES = {
   },
   [`${BASE}/defcon-128-mp3`]: {
     tag: 'hacker',
-    // terminal matrix greens
     stops: [
       { p: 0.0, c: [30, 140, 60] },
       { p: 0.5, c: [60, 200, 90] },
@@ -128,7 +114,6 @@ const THEMES = {
   },
   [`${BASE}/fluid-128-mp3`]: {
     tag: 'beats',
-    // liquid blue -> violet
     stops: [
       { p: 0.0, c: [70, 150, 235] },
       { p: 0.5, c: [130, 120, 245] },
@@ -138,7 +123,6 @@ const THEMES = {
   },
   [`${BASE}/indiepop-128-mp3`]: {
     tag: 'indie',
-    // bubblegum coral
     stops: [
       { p: 0.0, c: [240, 120, 130] },
       { p: 0.5, c: [255, 150, 110] },
@@ -148,7 +132,6 @@ const THEMES = {
   },
   [`${BASE}/secretagent-128-mp3`]: {
     tag: 'spy',
-    // noir: cold steel with a martini-olive accent
     stops: [
       { p: 0.0, c: [110, 120, 140] },
       { p: 0.5, c: [160, 170, 190] },
@@ -158,7 +141,6 @@ const THEMES = {
   },
   [`${BASE}/vaporwaves-128-mp3`]: {
     tag: 'vaporwave',
-    // mall-at-midnight: pink -> aqua
     stops: [
       { p: 0.0, c: [255, 110, 200] },
       { p: 0.5, c: [190, 130, 240] },
@@ -168,7 +150,6 @@ const THEMES = {
   },
   [`${BASE}/deepspaceone-128-mp3`]: {
     tag: 'space',
-    // void: indigo -> starlight
     stops: [
       { p: 0.0, c: [80, 80, 180] },
       { p: 0.5, c: [130, 120, 220] },
@@ -178,7 +159,6 @@ const THEMES = {
   },
   [`${BASE}/cliqhop-128-mp3`]: {
     tag: 'glitch',
-    // circuit board: cyan -> white glitch
     stops: [
       { p: 0.0, c: [40, 180, 200] },
       { p: 0.5, c: [80, 220, 230] },
@@ -188,7 +168,6 @@ const THEMES = {
   },
   [`${BASE}/thistle-128-mp3`]: {
     tag: 'tavern',
-    // tavern: hearth wood and ale
     stops: [
       { p: 0.0, c: [140, 100, 60] },
       { p: 0.5, c: [200, 150, 80] },
@@ -198,7 +177,6 @@ const THEMES = {
   },
   [`${BASE}/suburbsofgoa-128-mp3`]: {
     tag: 'goa',
-    // psychedelic sunset: magenta -> gold
     stops: [
       { p: 0.0, c: [200, 80, 200] },
       { p: 0.5, c: [240, 130, 120] },
@@ -208,7 +186,6 @@ const THEMES = {
   },
   [`${BASE}/bossa-128-mp3`]: {
     tag: 'jazz',
-    // tropical: green -> gold
     stops: [
       { p: 0.0, c: [90, 200, 110] },
       { p: 0.5, c: [220, 200, 90] },
@@ -218,7 +195,6 @@ const THEMES = {
   },
   [`${BASE}/seventies-128-mp3`]: {
     tag: 'indie',
-    // disco: brown -> orange -> gold
     stops: [
       { p: 0.0, c: [200, 110, 50] },
       { p: 0.5, c: [240, 160, 60] },
@@ -228,7 +204,6 @@ const THEMES = {
   },
   [`${BASE}/reggae-128-mp3`]: {
     tag: 'chill',
-    // rasta: green -> gold -> red
     stops: [
       { p: 0.0, c: [40, 180, 70] },
       { p: 0.5, c: [240, 210, 60] },
@@ -238,7 +213,6 @@ const THEMES = {
   },
   [`${BASE}/dubstep-128-mp3`]: {
     tag: 'beats',
-    // wobble: purple -> teal -> lime
     stops: [
       { p: 0.0, c: [120, 80, 220] },
       { p: 0.5, c: [80, 180, 160] },
@@ -248,7 +222,6 @@ const THEMES = {
   },
   [`${BASE}/illstreet-128-mp3`]: {
     tag: 'jazz',
-    // cocktail lounge: amber
     stops: [
       { p: 0.0, c: [170, 120, 70] },
       { p: 0.5, c: [220, 170, 90] },
@@ -258,7 +231,6 @@ const THEMES = {
   },
   [`${BASE}/folkfwd-128-mp3`]: {
     tag: 'tavern',
-    // earthy: green -> gold
     stops: [
       { p: 0.0, c: [110, 140, 70] },
       { p: 0.5, c: [160, 180, 90] },
@@ -268,16 +240,6 @@ const THEMES = {
   },
 };
 
-// Users can add their own stations — and optionally a label and a theme
-// (colour gradient + sprites) — in ~/.vibecode-fm/stations.json (or the file
-// VIBECODE_STATIONS points at). Entries are either a plain URL string or an
-// object:
-//   { "focus": "https://stream.example/focus.mp3",
-//     "night": { "url": "https://...", "label": "Night Drive",
-//                "theme": { "stops": [{ "p": 0, "c": [80, 80, 180] }],
-//                           "sprites": ["✦", "★", "·"] } } }
-// Custom names win over built-ins; malformed entries are ignored — user
-// content must never break the plugin.
 function customFile() {
   return (
     process.env.VIBECODE_STATIONS ||
@@ -303,21 +265,17 @@ function custom() {
       }
     }
   } catch {
-    /* no custom file or bad json: built-ins only */
   }
   customCache = out;
   return out;
 }
 
-// One canonical vibe per distinct channel, the order `/next` cycles through.
 const CAROUSEL = [
   'chill', 'ambient', 'metal', 'jazz', 'synthwave', 'hacker', 'beats',
   'indie', 'spy', 'vaporwave', 'space', 'glitch', 'tavern', 'goa',
   'bossa', 'seventies', 'reggae', 'dubstep', 'lounge', 'folk',
 ];
 
-// Ordered, de-duplicated list of station URLs for `/next`: the curated
-// carousel first, then any custom stations the user added.
 function carousel() {
   const urls = [];
   for (const vibe of CAROUSEL) {
@@ -330,8 +288,6 @@ function carousel() {
   return urls;
 }
 
-// The station after `currentUrl` in the carousel (wraps around); the first
-// station when the current one isn't in the list.
 function nextStation(currentUrl) {
   const list = carousel();
   if (!list.length) return null;
@@ -348,14 +304,12 @@ function names() {
   return [...new Set([...Object.keys(STATIONS), ...Object.keys(custom().stations)])];
 }
 
-// Display-ready name for a station URL, or null if it isn't a known one.
 function label(url) {
   if (!url) return null;
   if (custom().labels[url]) return custom().labels[url];
   return LABELS[url] ? `${LABELS[url]} · SomaFM` : null;
 }
 
-// Equalizer theme for a station URL, or null to use the default.
 function theme(url) {
   if (!url) return null;
   return custom().themes[url] || THEMES[url] || null;
