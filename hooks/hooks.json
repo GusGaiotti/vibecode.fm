@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" play Notification",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/vibecode-fm\" pause Notification",
             "timeout": 10
           }
         ]
