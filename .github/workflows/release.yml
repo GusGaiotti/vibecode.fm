@@ -38,7 +38,7 @@ jobs:
           bin=target/${{ matrix.target }}/release/vibecode-fm
           [ -f "$bin.exe" ] && bin="$bin.exe"
           cp "$bin" "${{ matrix.asset }}"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: ${{ matrix.asset }}
           fail_on_unmatched_files: true
