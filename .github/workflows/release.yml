@@ -27,7 +27,7 @@ jobs:
             asset: vibecode-fm-windows-x86_64.exe
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -38,7 +38,7 @@ jobs:
           bin=target/${{ matrix.target }}/release/vibecode-fm
           [ -f "$bin.exe" ] && bin="$bin.exe"
           cp "$bin" "${{ matrix.asset }}"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: ${{ matrix.asset }}
           fail_on_unmatched_files: true
