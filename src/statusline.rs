@@ -105,6 +105,10 @@ fn phrases(tag: &str) -> Vec<&'static str> {
             "Merge conflicts of the heart",
             "while (alive) relax();",
             "git commit -m \"vibes\"",
+            "Deploying serotonin",
+            "No stress, just stack traces",
+            "Async and at peace",
+            "Sipping coffee, sinking bugs",
         ],
         "hacker" => vec![
             "sudo make me a sandwich",
@@ -113,6 +117,11 @@ fn phrases(tag: &str) -> Vec<&'static str> {
             "chmod 777 your dreams",
             "The cake is a lie, root is real",
             "rm -rf /doubt",
+            "Trust no input",
+            "We are the packets in the wire",
+            "Mr. Robot would approve",
+            "grep -r 'motivation' /dev/self",
+            "Hack the planet, mind the tabs",
         ],
         "synthwave" => vec![
             "Ride or die, mostly ride",
@@ -120,6 +129,9 @@ fn phrases(tag: &str) -> Vec<&'static str> {
             "Neon never dies",
             "Outrun your deadlines",
             "1985 called, it approves",
+            "Chrome hearts, cold builds",
+            "Sunset over the mainframe",
+            "Drive fast, ship faster",
         ],
         "metal" => vec![
             "Segfault of the ancients",
@@ -127,58 +139,87 @@ fn phrases(tag: &str) -> Vec<&'static str> {
             "kill -9 the weak",
             "Riff-driven development",
             "Compile in fire",
+            "Unleash the daemons",
+            "Thou shalt not npm install",
+            "Double kick, double commit",
         ],
         "jazz" => vec![
             "Improvise your architecture",
             "Syncopated semicolons",
             "Cool as a nil pointer",
             "Blue notes, green builds",
+            "Let the compiler swing",
+            "Bebop and rebase",
+            "Smoke-filled server room",
         ],
         "vaporwave" => vec![
             "A E S T H E T I C undefined",
             "Nostalgia.exe has stopped",
             "Buy nothing, feel everything",
             "Vibes from a dead future",
+            "M O O D  buffer",
+            "Ship it to the past",
+            "Pale grid, warm heart",
         ],
         "space" => vec![
             "In space no one hears your typos",
             "Floating point in the void",
             "Lost in the async",
             "A cosmic ray flipped my bit",
+            "Zero-g, zero warnings",
+            "Docking with the mainframe",
+            "The stack is dark and full of frames",
         ],
         "glitch" => vec![
             "It's not a bug it's ▓ejfk",
             "Reality buffer underrun",
             "01100110 feelings",
             "Corrupt but honest",
+            "S̷i̸g̶n̷a̴l̸ lost, vibe found",
+            "Frame dropped, mood kept",
+            "Divide by zero, feel infinite",
         ],
         "tavern" => vec![
             "Roll for initiative",
             "A bard walks into a repo",
             "Quest: fix the merge",
             "Ye olde stack trace",
+            "+2 to concentration",
+            "Natural 20 on the deploy",
+            "The tavern keeper knows regex",
         ],
         "goa" => vec![
             "Consciousness not found (404)",
             "Trance-pile the universe",
             "Ego death, clean build",
             "One with the async",
+            "Third eye, single thread",
+            "Dance until the tests pass",
         ],
         "beats" => vec![
             "Drop the bass, not the table",
             "Flow state, git rebase",
             "Bars over var",
+            "Boom bap, then boom deploy",
+            "Sample this, ship that",
+            "Head nod driven design",
         ],
         "indie" => vec![
             "You wouldn't get this build",
             "Twee-driven development",
             "Heartfelt and hardcoded",
+            "Sad songs, happy paths",
+            "Cardigan-core engineering",
+            "B-side of the changelog",
         ],
         "spy" => vec![
             "This splash will self-destruct",
             "Shaken, not stack-traced",
             "License to kill -9",
             "The name's Null. Pointer Null.",
+            "For your eyes only, root",
+            "Encrypt, deny, deploy",
+            "The password is never the password",
         ],
         _ => vec![],
     }
@@ -190,6 +231,13 @@ const UNIVERSAL: &[&str] = &[
     "Cogito ergo sum(array)",
     "This too shall pass tests",
     "The unexamined loop is not worth running",
+    "One does not simply merge to main",
+    "Ship happens",
+    "Works on my machine",
+    "The bug is coming from inside the house",
+    "TODO: become legendary",
+    "It compiles, ship it",
+    "May your builds be green",
 ];
 
 fn pick_phrase(theme: &Theme) -> String {
@@ -202,7 +250,7 @@ fn pick_phrase(theme: &Theme) -> String {
     pool[i].to_string()
 }
 
-fn sprite_run(cols: i64, intensity: f64, theme: &Theme, moving: bool, phase: i64) -> String {
+fn sprite_run(cols: i64, theme: &Theme, moving: bool, phase: i64) -> String {
     if cols <= 0 {
         return String::new();
     }
@@ -217,15 +265,9 @@ fn sprite_run(cols: i64, intensity: f64, theme: &Theme, moving: bool, phase: i64
     } else {
         &theme.stops
     };
-    let gap = if moving {
-        (3 - (intensity * 2.0).round() as i64).max(1)
-    } else {
-        3
-    };
-    let period = gap + 1;
-    let speed = 3.0 + intensity * 12.0;
+    let period = 4;
     let offset = (if moving {
-        (now_ms() / 1000.0 * speed).floor() as i64
+        (now_ms() / 1000.0 * 7.0).floor() as i64
     } else {
         0
     }) + phase;
@@ -252,21 +294,15 @@ fn sprite_run(cols: i64, intensity: f64, theme: &Theme, moving: bool, phase: i64
     out
 }
 
-const TITLE_MAX: usize = 28;
-
-fn marquee(text: &str, max: usize) -> String {
+fn truncate(text: &str, max: usize) -> String {
     let chars: Vec<char> = text.chars().collect();
     if chars.len() <= max {
         return text.to_string();
     }
-    let loop_chars: Vec<char> = format!("{text}  ♪  ").chars().collect();
-    let offset = (now_ms() / 400.0) as usize % loop_chars.len();
-    let doubled: Vec<char> = loop_chars
-        .iter()
-        .chain(loop_chars.iter())
-        .copied()
-        .collect();
-    doubled[offset..offset + max].iter().collect()
+    let cut = max.saturating_sub(1);
+    let mut s: String = chars[..cut].iter().collect();
+    s.push('…');
+    s
 }
 
 fn model_color(model: &str) -> [u8; 3] {
@@ -292,7 +328,7 @@ fn display_title() -> String {
     controller::station_label().unwrap_or_else(|| "vibecode.fm".into())
 }
 
-fn centre_band(width: i64, phrase: &str, intensity: f64, theme: &Theme, moving: bool) -> String {
+fn centre_band(width: i64, phrase: &str, theme: &Theme, moving: bool) -> String {
     if width <= 0 {
         return String::new();
     }
@@ -325,12 +361,12 @@ fn centre_band(width: i64, phrase: &str, intensity: f64, theme: &Theme, moving: 
         let left_w = side / 2;
         let right_w = side - left_w;
         let left = if sprites {
-            sprite_run(left_w, intensity, theme, moving, 0)
+            sprite_run(left_w, theme, moving, 0)
         } else {
             " ".repeat(left_w.max(0) as usize)
         };
         let right = if sprites {
-            sprite_run(right_w, intensity, theme, moving, 5)
+            sprite_run(right_w, theme, moving, 5)
         } else {
             " ".repeat(right_w.max(0) as usize)
         };
@@ -345,7 +381,7 @@ fn centre_band(width: i64, phrase: &str, intensity: f64, theme: &Theme, moving: 
             " ".repeat((pad - l).max(0) as usize)
         )
     } else if sprites {
-        sprite_run(inner, intensity, theme, moving, 0)
+        sprite_run(inner, theme, moving, 0)
     } else {
         " ".repeat(inner.max(0) as usize)
     };
@@ -380,17 +416,12 @@ pub fn render() {
         } else {
             theme.stops.clone()
         };
-        let title = marquee(&display_title(), TITLE_MAX);
+        let title_max = (width / 4).max(18) as usize;
+        let title = truncate(&display_title(), title_max);
         let head = format!("📻 {}", paint(&title, gradient_color(&stops, 0.9), true));
         let head_len = 3 + title.chars().count() as i64;
         let mid_w = (width - head_len - model.chars().count() as i64 - 2).max(0);
-        let band = centre_band(
-            mid_w,
-            &pick_phrase(&theme),
-            controller::activity_level(),
-            &theme,
-            moving,
-        );
+        let band = centre_band(mid_w, &pick_phrase(&theme), &theme, moving);
         format!("{head} {band} {}", paint(&model, mc, false))
     } else {
         paint(&model, mc, false)

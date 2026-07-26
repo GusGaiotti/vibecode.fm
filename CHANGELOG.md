@@ -14,11 +14,10 @@ First public release.
 - Themed status line: play/pause state, live track, per-station colour gradient, drifting
   sprites, and rotating splash phrases. `VIBECODE_MINIMAL`, `VIBECODE_SPRITES` and
   `VIBECODE_SPLASH` tune it down.
-- 26 curated SomaFM vibes, each with its own colours, icons and phrases; user-defined
-  stations via `~/.vibecode-fm/stations.json`.
+- 20 curated SomaFM stations, each with its own colours, icons and phrases (plus name
+  synonyms); user-defined stations via `~/.vibecode-fm/stations.json`.
 - Commands: `/vibe` (DJ mode), `/radio`, `/next`, `/volume`, `/focus`, `/on`, `/off`, `/help`.
-- Focus mode (`/focus off`) plays continuously; adaptive volume swells with how hard the
-  agent is working; fades on every transition.
+- Focus mode (`/focus off`) plays continuously; smooth volume fades on every transition.
 - Resilient streaming: transparent reconnects, a demuxer cache that hides brief drops, and
   a device-keep-alive flag so resume is instant.
 - Self-contained native binary written in Rust — no runtime or interpreter required, one

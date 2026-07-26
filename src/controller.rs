@@ -12,9 +12,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const FADE_MS: u64 = 180;
 const FADE_STEPS: i64 = 6;
-const ACTIVITY_WINDOW_MS: i64 = 8000;
-const ACTIVITY_MAX: f64 = 6.0;
-const ADAPTIVE_SPREAD: f64 = 15.0;
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -69,27 +66,6 @@ fn volume() -> i64 {
         .unwrap_or(70)
 }
 
-pub fn adaptive_volume(base: i64, level: f64) -> i64 {
-    let v = (base as f64 - ADAPTIVE_SPREAD + 2.0 * ADAPTIVE_SPREAD * level).round() as i64;
-    v.clamp(0, 100)
-}
-
-fn adaptive_enabled() -> bool {
-    let v = env::var("VIBECODE_ADAPTIVE")
-        .unwrap_or_default()
-        .to_lowercase();
-    !matches!(v.as_str(), "0" | "false" | "off" | "no")
-}
-
-fn target_volume() -> i64 {
-    let base = volume();
-    if !adaptive_enabled() {
-        base
-    } else {
-        adaptive_volume(base, activity_level())
-    }
-}
-
 fn source() -> String {
     if let Ok(s) = env::var("VIBECODE_SOURCE") {
         return s;
@@ -139,39 +115,13 @@ fn fade_out() {
 
 fn record_activity() {
     let _ = fs::create_dir_all(paths::state_dir());
-    let now = now_ms();
-    let mut stamps: Vec<i64> = fs::read_to_string(paths::activity_file())
-        .unwrap_or_default()
-        .lines()
-        .filter_map(|l| l.parse::<i64>().ok())
-        .filter(|t| now - t < ACTIVITY_WINDOW_MS)
-        .collect();
-    stamps.push(now);
-    let text = stamps
-        .iter()
-        .map(|t| t.to_string())
-        .collect::<Vec<_>>()
-        .join("\n");
-    let _ = fs::write(paths::activity_file(), text);
-}
-
-pub fn activity_level() -> f64 {
-    let now = now_ms();
-    let count = fs::read_to_string(paths::activity_file())
-        .unwrap_or_default()
-        .lines()
-        .filter_map(|l| l.parse::<i64>().ok())
-        .filter(|t| now - t < ACTIVITY_WINDOW_MS)
-        .count() as f64;
-    (count / ACTIVITY_MAX).min(1.0)
+    let _ = fs::write(paths::activity_file(), now_ms().to_string());
 }
 
 pub fn last_activity_ms() -> i64 {
     fs::read_to_string(paths::activity_file())
-        .unwrap_or_default()
-        .lines()
-        .filter_map(|l| l.parse::<i64>().ok())
-        .max()
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
         .unwrap_or(0)
 }
 
@@ -240,7 +190,7 @@ pub fn play() {
         return;
     }
     if was_halted {
-        let target = target_volume();
+        let target = volume();
         ipc::set_prop("mute", json!(false));
         ipc::set_prop("pause", json!(false));
         let warm = ipc::get_prop("demuxer-cache-time")
@@ -255,8 +205,6 @@ pub fn play() {
         if !fade((target as f64 / 2.0).round() as i64, target, Some(token)) {
             ipc::set_prop("mute", json!(true));
         }
-    } else if adaptive_enabled() {
-        ipc::set_prop("volume", json!(target_volume()));
     }
     log_audio(&format!("PLAY done in {}ms", now_ms() - t0));
     ensure_watchdog();
@@ -307,9 +255,9 @@ fn apply_station(url: &str) {
         ipc::set_prop("volume", json!(0));
         ipc::set_prop("mute", json!(false));
         ipc::set_prop("pause", json!(false));
-        fade_to(target_volume());
+        fade_to(volume());
     } else {
-        player::start(url, target_volume());
+        player::start(url, volume());
         ipc::set_prop("mute", json!(false));
         ipc::set_prop("pause", json!(false));
     }
@@ -398,15 +346,6 @@ pub fn track() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn adaptive_volume_scales_and_clamps() {
-        assert_eq!(adaptive_volume(70, 0.0), 55);
-        assert_eq!(adaptive_volume(70, 0.5), 70);
-        assert_eq!(adaptive_volume(70, 1.0), 85);
-        assert_eq!(adaptive_volume(95, 1.0), 100);
-        assert_eq!(adaptive_volume(10, 0.0), 0);
-    }
 
     #[test]
     fn sanitize_strips_control_and_escape_chars() {

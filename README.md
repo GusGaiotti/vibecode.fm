@@ -46,7 +46,9 @@ In Claude Code:
 /plugin install vibecode-fm@vibecode-fm
 ```
 
-Build the binary (needs a [Rust toolchain](https://rustup.rs)):
+Get the binary. Either download the prebuilt one for your platform from the
+[latest release](https://github.com/GusGaiotti/vibecode.fm/releases/latest), or build it
+yourself (needs a [Rust toolchain](https://rustup.rs)):
 
 ```sh
 cargo build --release        # produces target/release/vibecode-fm
@@ -78,10 +80,11 @@ Submit a prompt and the music starts.
 | `/vibecode-fm:on` / `:off` | Enable / disable the plugin |
 | `/vibecode-fm:help` | Command + settings reference |
 
-**Vibes:** chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker, defcon,
-beats, hiphop, indie, rock, spy, vaporwave, space, glitch, tavern, goa, bossa, seventies,
-reggae, dubstep, lounge, folk — curated [SomaFM](https://somafm.com) channels (free, legal,
-no login). Each vibe has its own status-line colours, icons and splash phrases.
+**Vibes:** chill, ambient, metal, jazz, synthwave, hacker, beats, indie, spy, vaporwave,
+space, glitch, tavern, goa, bossa, seventies, reggae, dubstep, lounge, folk — 20 curated
+[SomaFM](https://somafm.com) channels (free, legal, no login), each with its own status-line
+colours, icons and splash phrases. Common synonyms work too (`lofi`, `retro`, `defcon`,
+`drone`, `hiphop`, `psy`, `agent`…).
 
 ## The status line
 
@@ -103,8 +106,7 @@ All optional, via environment variables:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VIBECODE_VOLUME` | `70` | Base volume (0–100) |
-| `VIBECODE_ADAPTIVE` | on | `0` keeps a fixed volume instead of swelling with work |
+| `VIBECODE_VOLUME` | `70` | Volume (0–100) |
 | `VIBECODE_SOURCE` | bundled playlist | Any file, URL or `.m3u` mpv can open |
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Your custom stations file |
 | `VIBECODE_MPV_BIN` | `mpv` | Path to mpv if it isn't on your `PATH` |
