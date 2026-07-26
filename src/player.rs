@@ -88,8 +88,7 @@ pub fn start(source: &str, volume: i64) -> bool {
         if let Ok(modified) = meta.modified() {
             if SystemTime::now()
                 .duration_since(modified)
-                .map(|d| d.as_secs() < 10)
-                .unwrap_or(false)
+                .is_ok_and(|d| d.as_secs() < 10)
             {
                 return wait_alive();
             }
