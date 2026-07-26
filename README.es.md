@@ -8,9 +8,11 @@ Claude empieza a trabajar, la música entra. Te devuelve el turno, la música se
 cuándo el agente está ocupado y cuándo te necesita, sin estar pegado a la pantalla. Una barra de
 estado temática muestra la pista, la estación y el estado — y todo funciona solo.
 
-<!-- demo: agregar capturas aquí — sonando (synthwave), el tema hacker, y un turno en pausa -->
+<img width="1882" height="141" alt="Captura de tela 2026-07-26 151637" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
 
 ## Cómo funciona
+
+<img width="1867" height="727" alt="Captura de tela 2026-07-26 151956" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
 
 El plugin conecta los [hooks de Claude Code](https://code.claude.com/docs/en/hooks) con una
 instancia de [mpv](https://mpv.io) en segundo plano, a través de su canal JSON IPC:
