@@ -6,9 +6,11 @@ Claude starts crunching — the music starts. It hands back to you — the music
 themed status line shows what's happening at a glance, and the whole thing follows the
 agent's state so you never have to touch it.
 
-<!-- demo: add screenshots here — playing (synthwave), the hacker theme, and a paused turn -->
+<img width="1882" height="141" alt="Captura de tela 2026-07-26 151637" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
 
 ## How it works
+
+<img width="1867" height="727" alt="Captura de tela 2026-07-26 151956" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
 
 The plugin wires [Claude Code hooks](https://code.claude.com/docs/en/hooks) to a
 background [mpv](https://mpv.io) instance over its JSON IPC channel:
