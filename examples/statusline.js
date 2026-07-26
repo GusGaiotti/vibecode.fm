@@ -1,20 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
-// Example Claude Code statusline for vibecode.fm.
-//
-//   ► playing : play glyph + track on the left, themed sprites drifting in from
-//               both sides around a rotating splash phrase in the centre (like
-//               Minecraft's splash text, but tuned to the station), model on
-//               the right.
-//   paused    : the centre reads "Your move!" with the sprites frozen and dim.
-//   idle      : just the model name.
-//
-// Honest eye-candy: the sprites are NOT synced to the audio waveform. They
-// scroll and recolour as a function of time; how fast/dense they move tracks
-// how hard the agent is working (activityLevel), and colours + glyphs + splash
-// phrases all come from the current station theme.
-//
+// Example Claude Code statusline for vibecode.fm: icon + track on the left,
+// themed sprites drifting around a rotating splash phrase in the centre, model
+// on the right. The sprites aren't synced to the audio (the statusline can't
+// repaint fast enough) — they move with time and with how busy the agent is.
 // Point settings.json at it:
 //   "statusLine": { "type": "command", "command": "node /path/to/examples/statusline.js" }
 
@@ -28,13 +18,17 @@ const fg = (r, g, b) => `\x1b[38;2;${r};${g};${b}m`;
 const paint = (s, r, g, b, bold) => `${bold ? BOLD : ''}${fg(r, g, b)}${s}${RESET}`;
 
 // ---- Config toggles (env vars, documented in the README) ---------------------
+// VIBECODE_MINIMAL=1  just the icon + title (no sprites, no phrase)
 // VIBECODE_SPRITES=0  drop the drifting icons (keep the splash phrase)
 // VIBECODE_SPLASH=0   drop the splash phrase (keep the icons)
 function envOff(name) {
   return ['0', 'false', 'off', 'no'].includes(String(process.env[name] || '').toLowerCase());
 }
-const spritesEnabled = () => !envOff('VIBECODE_SPRITES');
-const splashEnabled = () => !envOff('VIBECODE_SPLASH');
+function envOn(name) {
+  return ['1', 'true', 'on', 'yes'].includes(String(process.env[name] || '').toLowerCase());
+}
+const spritesEnabled = () => !envOn('VIBECODE_MINIMAL') && !envOff('VIBECODE_SPRITES');
+const splashEnabled = () => !envOn('VIBECODE_MINIMAL') && !envOff('VIBECODE_SPLASH');
 
 // ---- Theme fallback (chill / lofi / Groove Salad and custom stations) --------
 const DEFAULT_THEME = {

@@ -455,7 +455,14 @@ async function track() {
   if (isDisabled()) return '';
   const reply = await send(ipcPath(), { command: ['get_property', 'media-title'] });
   if (!reply || reply.error !== 'success' || !reply.data) return '';
-  return String(reply.data).replace(/\s+/g, ' ').trim().slice(0, 48);
+  // The title is untrusted stream metadata rendered into the terminal, so strip
+  // control/escape characters (no ANSI injection) and collapse whitespace.
+  return String(reply.data)
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1f\x7f\x9b]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 48);
 }
 
 // Friendly name of the station currently selected via `radio`, e.g.

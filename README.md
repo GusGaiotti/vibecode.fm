@@ -1,46 +1,41 @@
 # vibecode.fm
 
-> 🇧🇷 [Leia em português](README.pt-BR.md)
+**Music that plays while Claude Code works and pauses when it's your turn.**
 
-Music that plays while Claude Code works and pauses when it's your turn.
+Claude starts crunching — the music starts. It hands back to you — the music stops. A
+themed status line shows what's happening at a glance, and the whole thing follows the
+agent's state so you never have to touch it.
 
-Your agent starts crunching — the music starts. It asks for permission or finishes
-the task — the music stops. A ▶ / ❚❚ indicator in the status line tells you which
-state you're in without looking up from your prompt.
-
-<!-- TODO: demo.gif here — the music pausing exactly when Claude asks a question. -->
+<!-- demo: add screenshots here — playing (synthwave), the hacker theme, and "Your move" -->
 
 ## How it works
 
-The plugin wires [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks)
-to a background [mpv](https://mpv.io) instance over its JSON IPC channel:
+The plugin wires [Claude Code hooks](https://code.claude.com/docs/en/hooks) to a
+background [mpv](https://mpv.io) instance over its JSON IPC channel:
 
-| Event | Action |
+| What happens | The music |
 |---|---|
-| You submit a prompt | play |
-| Claude runs a tool | play |
-| Claude asks for permission / input | pause |
-| Claude finishes the turn | pause |
-| Session ends | pause |
+| You submit a prompt | ▶ plays |
+| Claude runs a tool | ▶ plays |
+| A permission prompt (yes/no) appears | ▶ keeps playing, status line shows `⏳ your call` |
+| Claude finishes the turn | ⏸ pauses (`▌▐ Your move!`) |
+| Session ends | ⏸ pauses |
 
-It's a single, zero-dependency Node script. Hooks never block the agent: every call
-backgrounds its work and exits 0. If mpv isn't installed the plugin does nothing, silently.
+It's a single, zero-dependency Node script. Hooks exit 0 no matter what and never break a
+session; if mpv isn't installed the plugin does nothing, silently.
 
 ## Requirements
 
-- **Node.js 18+** (you already have it — Claude Code runs on Node)
-- **[mpv](https://mpv.io)** on your `PATH`
+- **Node.js 18+** — you already have it, Claude Code runs on Node.
+- **[mpv](https://mpv.io)** on your `PATH`:
 
 ```sh
-# macOS
-brew install mpv
-# Debian / Ubuntu / Raspberry Pi OS
-sudo apt install mpv
-# Windows
-winget install shinchiro.mpv
+brew install mpv                 # macOS
+sudo apt install mpv             # Debian / Ubuntu / Raspberry Pi OS
+winget install shinchiro.mpv     # Windows
 ```
 
-Runs on **Windows, macOS, Linux and WSL** — one codebase, verified on all three in CI.
+One codebase for **Windows, macOS, Linux and WSL**; the test suite runs on all three in CI.
 
 ## Install
 
@@ -51,15 +46,7 @@ In Claude Code:
 /plugin install vibecode-fm@vibecode-fm
 ```
 
-Submit a prompt and the music starts.
-
-## Status line
-
-`node bin/vibecode.js status` prints `►`, `❚❚` or nothing; `... track` prints the
-current title. Append them to your own status line, or use the ready-made example:
-while the agent works it shows a full-width equalizer whose colour tracks how hard
-Claude is working — green (light) → amber → orange → red (heavy); when it's your
-turn it shows the track title. Point `settings.json` at it:
+Point your status line at the bundled example (in `settings.json`):
 
 ```json
 {
@@ -70,15 +57,38 @@ turn it shows the track title. Point `settings.json` at it:
 }
 ```
 
+Submit a prompt and the music starts.
+
 ## Commands
 
-- `/vibecode-fm:radio <vibe>` — switch station. Vibes: `chill`, `lofi`, `ambient`,
-  `drone`, `metal`, `jazz`, `synthwave`, `retro`, `hacker`, `defcon`, `beats`,
-  `hiphop`, `indie`, `rock` (curated [SomaFM](https://somafm.com) channels).
-- `/vibecode-fm:on` — enable (playback resumes on the next agent event)
-- `/vibecode-fm:off` — stop the player and keep it off until turned back on
+| Command | What it does |
+|---|---|
+| `/vibecode-fm:vibe` | DJ mode — Claude picks the station that fits your session |
+| `/vibecode-fm:radio <vibe>` | Switch to a specific station |
+| `/vibecode-fm:next` | Skip to the next station |
+| `/vibecode-fm:volume <up\|down\|0-100>` | Set the volume |
+| `/vibecode-fm:focus <on\|off>` | On (default): pause when it's your turn. Off: play non-stop |
+| `/vibecode-fm:on` / `:off` | Enable / disable the plugin |
+| `/vibecode-fm:help` | Command + settings reference |
 
-Volume fades in and out on play/pause instead of cutting.
+**Vibes:** chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker, defcon,
+beats, hiphop, indie, rock, spy, vaporwave, space, glitch, tavern, goa, bossa, seventies,
+reggae, dubstep, lounge, folk — curated [SomaFM](https://somafm.com) channels (free, legal,
+no login). Each vibe has its own status-line colours, icons and splash phrases.
+
+## The status line
+
+While Claude works it shows a play icon, the live track, drifting themed sprites and a
+rotating splash phrase; when it's your turn it reads `▌▐ Your move!`. Colours, icons and
+phrases all come from the current station's theme.
+
+Prefer something quieter? Set these in the `env` block of your `settings.json`:
+
+| Variable | Effect |
+|---|---|
+| `VIBECODE_MINIMAL=1` | Just the icon and title |
+| `VIBECODE_SPRITES=0` | Drop the sprites (keep the phrase) |
+| `VIBECODE_SPLASH=0` | Drop the phrase (keep the sprites) |
 
 ## Configuration
 
@@ -86,45 +96,62 @@ All optional, via environment variables:
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `VIBECODE_SOURCE` | bundled playlist | Any file, URL or playlist mpv can open |
-| `VIBECODE_VOLUME` | `70` | Initial volume (0–100) |
-| `VIBECODE_MPV_BIN` | `mpv` | Path to the mpv binary, if it isn't on your `PATH` |
-| `VIBECODE_MPV_ARGS` | _(none)_ | Extra mpv flags (e.g. `--ao=pulse` on WSL) |
-| `VIBECODE_DEBUG` | _(off)_ | Log hook decisions and mpv output under the state dir |
+| `VIBECODE_VOLUME` | `70` | Base volume (0–100) |
+| `VIBECODE_ADAPTIVE` | on | `0` keeps a fixed volume instead of swelling with work |
+| `VIBECODE_SOURCE` | bundled playlist | Any file, URL or `.m3u` mpv can open |
+| `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Your custom stations file |
+| `VIBECODE_MPV_BIN` | `mpv` | Path to mpv if it isn't on your `PATH` |
+| `VIBECODE_MPV_ARGS` | — | Extra mpv flags (e.g. `--ao=pulse` on WSL) |
+| `VIBECODE_DEBUG` | off | Log hook decisions and timings under the state dir |
 
-The default playlist streams [SomaFM](https://somafm.com) (Groove Salad, Drone Zone,
-DEF CON Radio) — listener-supported, so [consider donating](https://somafm.com/support/)
-if it becomes your soundtrack. To use your own library instead:
+### Custom stations
 
-```sh
-export VIBECODE_SOURCE=~/music/focus/
+Add your own in `~/.vibecode-fm/stations.json` — a plain URL, or an object with a label and
+a status-line theme:
+
+```json
+{
+  "focus": "https://stream.example/focus.mp3",
+  "night": {
+    "url": "https://stream.example/night.mp3",
+    "label": "Night Drive",
+    "theme": { "stops": [{ "p": 0, "c": [80, 80, 180] }, { "p": 1, "c": [220, 220, 255] }],
+               "sprites": ["✦", "★", "·", "♪"] }
+  }
+}
 ```
+
+The default streams [SomaFM](https://somafm.com) — listener-supported, so
+[consider donating](https://somafm.com/support/) if it becomes your soundtrack.
+
+## Known limitations
+
+These are Claude Code / terminal constraints, not bugs — documented for honesty:
+
+- **Ctrl+C doesn't pause.** Interrupting a turn fires no hook, so the plugin can't react;
+  the music pauses on the next turn that ends normally.
+- **The status line updates on Claude Code's repaint schedule**, not on demand, so the
+  `▌▐ Your move!` transition can lag a beat. The sprite animation is time-based for the same
+  reason — it can't be synced to the audio.
+- **A long command you approve stays quiet until it finishes** — there's no hook for "tool
+  started after approval", so the music resumes when the tool ends. Short tools resume
+  imperceptibly. (`/focus off` sidesteps this by never pausing.)
+- **Audio is verified on Windows.** The code is cross-platform and CI passes on macOS and
+  Linux, but real-audio testing there is community-pending — please report issues.
 
 ## WSL
 
-On WSL, mpv often defaults to a broken PipeWire output and plays silently. Force the
-PulseAudio output WSLg provides:
+mpv on WSL often defaults to a broken output and plays silently. Force PulseAudio:
 
 ```sh
 echo 'export VIBECODE_MPV_ARGS="--ao=pulse"' >> ~/.bashrc
 ```
 
-Windows and Linux hosts need none of this — it's a WSL quirk, not the plugin.
-
-## Notes
-
-- One player is shared across sessions: with several Claude Code sessions open, the
-  last event wins. Closing a session pauses the music; `/vibecode-fm:off` stops it.
-- Ctrl+C to interrupt a turn does not pause the music — Claude Code has no hook for
-  interrupts, so playback resumes/pauses on the next real event.
-- No sound? Check mpv plays the source on its own first:
-  `mpv --no-video https://ice1.somafm.com/groovesalad-128-mp3`
-
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). In short: `node --test` runs the suite against
-a fake mpv, so no audio hardware is needed.
+`node --test` runs the suite against a fake mpv, so no audio hardware is needed. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © Gustavo Gaiotti

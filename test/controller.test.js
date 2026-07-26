@@ -140,6 +140,15 @@ test('track returns the media title', async () => {
   });
 });
 
+test('track strips control/escape characters from untrusted stream titles', async () => {
+  await withPlayer(async (state) => {
+    state.title = 'Evil\x1b[31m\x07\x00 Song';
+    const title = await controller.track();
+    assert.ok(!/[\x00-\x1f\x7f\x9b]/.test(title), 'no control chars survive');
+    assert.strictEqual(title, 'Evil[31m Song');
+  });
+});
+
 test('disabled flag suppresses play and status', async () => {
   await withPlayer(async (state) => {
     fs.writeFileSync(path.join(sandbox, 'disabled'), '');
