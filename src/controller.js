@@ -15,7 +15,6 @@ const {
   stationFile,
   volumeFile,
   intentFile,
-  attentionFile,
   activityFile,
   watchdogFile,
   debugEnabled,
@@ -79,42 +78,6 @@ function latestToken() {
 // True when a newer event has taken over since `token` was stamped.
 function superseded(token) {
   return latestToken() > token;
-}
-
-// ---- Attention (mid-turn "your call") ----------------------------------------
-// A permission prompt/question flags "your call" for the statusline without
-// pausing (pausing there would silence whatever runs next). Play/pause clear it.
-function setAttention() {
-  try {
-    fs.mkdirSync(stateDir(), { recursive: true });
-    fs.writeFileSync(attentionFile(), String(Date.now()));
-  } catch {
-    /* best-effort */
-  }
-}
-
-function clearAttention() {
-  try {
-    fs.unlinkSync(attentionFile());
-  } catch {
-    /* already clear */
-  }
-}
-
-// True while a recent Notification is unanswered (capped so a stale flag can't
-// stick forever).
-function attentionActive() {
-  try {
-    return Date.now() - Number(fs.readFileSync(attentionFile(), 'utf8').trim()) < 600000;
-  } catch {
-    return false;
-  }
-}
-
-async function attention() {
-  const token = actionToken();
-  await logAudio(`ATTENTION set token=${token} (keeping music playing)`);
-  setAttention();
 }
 
 // Time an async step and log how long it took (for latency diagnosis).
@@ -294,7 +257,6 @@ async function play() {
     log('PLAY skip: disabled flag set');
     return;
   }
-  clearAttention(); // Claude is working again
   recordIntent(token, 'play');
   const t0 = Date.now();
   recordActivity();
@@ -358,7 +320,6 @@ async function pause() {
     log('PAUSE skip: focus mode off (music plays continuously)');
     return;
   }
-  clearAttention(); // it's the user's turn now, not a mid-turn prompt
   recordIntent(token, 'pause');
   const live = await timed('alive-check', () => alive());
   if (!live) {
@@ -503,6 +464,20 @@ async function focus(arg) {
   }
 }
 
+// A little dancer for `/dance` — three frames of a figure grooving to the
+// current station, picked at random so it feels alive.
+function dance() {
+  const dancers = [
+    ['ヽ(⌐■_■)ノ♪', '♪ヽ(■_■⌐)ノ', 'ヽ(⌐■_■)ノ♬'],
+    ['♪┏(・o・)┛', '┗(・o・)┓♪', '♪┏(・o・)┛'],
+    ['(♪)┏(＾0＾)┛', '┗(＾0＾)┓(♫)', '(♬)┏(＾0＾)┛'],
+    ['⟨♪⟩ ᕕ( ᐛ )ᕗ', 'ᕕ( ᐛ )ᕗ ⟨♫⟩', '⟨♬⟩ ᕕ( ᐛ )ᕗ'],
+  ];
+  const crew = dancers[Math.floor(Math.random() * dancers.length)];
+  const label = stationLabel() || 'vibecode.fm';
+  return `\n   ${crew.join('   ')}\n\n   dancing to ${label} — keep coding ♪\n`;
+}
+
 function on() {
   log('action=on');
   try {
@@ -532,12 +507,11 @@ module.exports = {
   play,
   pause,
   hardPause,
-  attention,
-  attentionActive,
   radio,
   next,
   setVolume,
   focus,
+  dance,
   status,
   track,
   on,

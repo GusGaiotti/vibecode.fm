@@ -17,8 +17,8 @@ background [mpv](https://mpv.io) instance over its JSON IPC channel:
 |---|---|
 | You submit a prompt | ▶ plays |
 | Claude runs a tool | ▶ plays |
-| A permission prompt (yes/no) appears | ▶ keeps playing, status line shows `⏳ your call` |
-| Claude finishes the turn | ⏸ pauses (`▌▐ Your move!`) |
+| A permission prompt (yes/no) appears | ▶ keeps playing |
+| Claude finishes the turn | ⏸ pauses |
 | Session ends | ⏸ pauses |
 
 It's a single, zero-dependency Node script. Hooks exit 0 no matter what and never break a
@@ -69,6 +69,7 @@ Submit a prompt and the music starts.
 | `/vibecode-fm:volume <up\|down\|0-100>` | Set the volume |
 | `/vibecode-fm:focus <on\|off>` | On (default): pause when it's your turn. Off: play non-stop |
 | `/vibecode-fm:on` / `:off` | Enable / disable the plugin |
+| `/vibecode-fm:dance` | A little dancer for the current station 🕺 |
 | `/vibecode-fm:help` | Command + settings reference |
 
 **Vibes:** chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker, defcon,
@@ -78,9 +79,9 @@ no login). Each vibe has its own status-line colours, icons and splash phrases.
 
 ## The status line
 
-While Claude works it shows a play icon, the live track, drifting themed sprites and a
-rotating splash phrase; when it's your turn it reads `▌▐ Your move!`. Colours, icons and
-phrases all come from the current station's theme.
+It shows the live track on the left, drifting themed sprites and a rotating splash phrase in
+the middle, and the model on the right. The sprites drift while Claude works and sit still
+when it's your turn; colours, icons and phrases all come from the current station's theme.
 
 Prefer something quieter? Set these in the `env` block of your `settings.json`:
 

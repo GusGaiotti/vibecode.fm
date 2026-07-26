@@ -293,27 +293,13 @@ async function main() {
     const moving = icon === '►';
     const theme = controller.stationTheme() || DEFAULT_THEME;
     const stops = theme.stops || DEFAULT_THEME.stops;
-    let head;
-    let headLen;
-    if (moving && controller.attentionActive()) {
-      // Playing, but Claude is waiting on you mid-turn (a yes/no or a question).
-      // Keep the music going and signal it visually instead of pausing.
-      const label = 'your call';
-      head = `${paint('⏳', 236, 200, 64, true)} ${paint(label, 236, 210, 120, true)}`;
-      headLen = 2 + label.length; // hourglass + space + label
-    } else if (moving) {
-      // ► + live track/station title, tinted to the station theme.
-      const title = marquee(await displayTitle(), TITLE_MAX);
-      const [tr, tg, tb] = gradientColor(stops, 0.9);
-      head = `${paint('►', ...gradientColor(stops, 0.2), true)} ${paint(title, tr, tg, tb, true)}`;
-      headLen = 2 + title.length; // glyph + space + title
-    } else {
-      // Solid pause bars + "Your move!" in place of the title.
-      const label = 'Your move!';
-      head = `${paint('▌▐', 236, 200, 64, true)} ${paint(label, 236, 210, 120, true)}`;
-      headLen = 3 + label.length; // two bars + space + label
-    }
-    // The splash phrase stays in the centre in both states.
+    // The left is a stable ♪ + the track title — it only changes when the song
+    // does, never on play/pause, so it can't look out of sync. Play/pause is
+    // carried by the audio and by whether the sprites drift or sit dim.
+    const title = marquee(await displayTitle(), TITLE_MAX);
+    const [tr, tg, tb] = gradientColor(stops, 0.9);
+    const head = `${paint('♪', ...gradientColor(stops, 0.2), true)} ${paint(title, tr, tg, tb, true)}`;
+    const headLen = 2 + title.length; // glyph + space + title
     const midW = Math.max(0, width - headLen - model.length - 2);
     const band = centreBand(midW, pickPhrase(theme), controller.activityLevel(), theme, moving);
     out = `${head} ${band} ${paint(model, mr, mg, mb)}`;

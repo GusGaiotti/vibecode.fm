@@ -72,13 +72,6 @@ function intentFile() {
   return path.join(stateDir(), 'intent');
 }
 
-// Set (with a timestamp) while Claude is waiting on the user mid-turn — a
-// permission prompt or a question (Notification). The statusline reads it to
-// show a "your call" signal without pausing the music.
-function attentionFile() {
-  return path.join(stateDir(), 'attention');
-}
-
 // Rolling log of play events, used to gauge how hard the agent is working.
 function activityFile() {
   return path.join(stateDir(), 'activity');
@@ -106,7 +99,6 @@ module.exports = {
   stationFile,
   volumeFile,
   intentFile,
-  attentionFile,
   activityFile,
   watchdogFile,
   defaultSource,

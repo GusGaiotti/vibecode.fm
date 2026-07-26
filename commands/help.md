@@ -13,6 +13,7 @@ Show the user this reference, verbatim:
 - `/vibecode-fm:volume <up|down|0-100>` — set the volume
 - `/vibecode-fm:focus <on|off>` — on (default) pauses when it's your turn; off plays non-stop
 - `/vibecode-fm:on` / `/vibecode-fm:off` — enable / disable the plugin
+- `/vibecode-fm:dance` — a little dancer for the current station 🕺
 - `/vibecode-fm:help` — this screen
 
 **Vibes** — chill, lofi, ambient, drone, metal, jazz, synthwave, retro, hacker, defcon, beats, hiphop, indie, rock, spy, vaporwave, space, glitch, tavern, goa, bossa, seventies, reggae, dubstep, lounge, folk

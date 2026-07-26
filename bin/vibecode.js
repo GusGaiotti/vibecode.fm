@@ -28,13 +28,13 @@ function log(action, message) {
 
 async function main() {
   const action = process.argv[2];
-  // For play/pause/attention the hooks pass their event name as argv[3]
-  // (UserPromptSubmit, PreToolUse, PostToolUse, Notification, Stop, SessionEnd).
+  // For play/pause the hooks pass their event name as argv[3] (UserPromptSubmit,
+  // PreToolUse, PostToolUse, Notification, PermissionRequest, Stop, SessionEnd).
   const event = process.argv[3];
   if (event) process.env.VIBECODE_EVENT = event;
   // Stamp when the hook fired so racing events serialize by real order.
   if (!process.env.VIBECODE_TOKEN) process.env.VIBECODE_TOKEN = String(Date.now());
-  if (['play', 'pause', 'attention'].includes(action)) {
+  if (['play', 'pause'].includes(action)) {
     log(action, `HOOK ${event || '?'} fired (token ${process.env.VIBECODE_TOKEN})`);
   }
   const controller = require('../src/controller');
@@ -44,9 +44,6 @@ async function main() {
       break;
     case 'pause':
       await controller.pause();
-      break;
-    case 'attention':
-      await controller.attention();
       break;
     case 'status':
       process.stdout.write(await controller.status());
@@ -65,6 +62,9 @@ async function main() {
       break;
     case 'focus':
       await controller.focus(process.argv[3]);
+      break;
+    case 'dance':
+      process.stdout.write(controller.dance());
       break;
     case 'on':
       controller.on();
