@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" pause Notification",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" attention Notification",
             "timeout": 10
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" pause PermissionRequest",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/vibecode.js\" attention PermissionRequest",
             "timeout": 10
           }
         ]

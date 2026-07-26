@@ -39,8 +39,8 @@ function log(message) {
   }
 }
 
-// Snapshot of the player's audio state, for tracing what actually changed.
-// Only runs when debug logging is on (the IPC round-trips aren't free).
+// Log the player's audio state alongside a message (debug only — the extra
+// IPC calls aren't free).
 async function logAudio(message) {
   if (!debugEnabled()) return;
   const mute = await getProp('mute');
@@ -50,17 +50,13 @@ async function logAudio(message) {
 }
 
 // ---- Intent serialization ----------------------------------------------------
-// Every play/pause carries a token stamped when its hook fired (via the bin
-// entry point). The controller records the newest token as the current intent;
-// any action whose token is older than the recorded one has been superseded by
-// a later event and must not touch the player. This kills the race where a
-// detached play, finishing after a pause, un-mutes the music.
+// Each play/pause carries a token stamped when its hook fired; the newest one
+// wins, so a slow event can't override a more recent one.
 function actionToken() {
   return Number(process.env.VIBECODE_TOKEN) || Date.now();
 }
 
-// Record this event as the current intent — but only if it's newer than what's
-// already there, so a late-arriving older event can't clobber a fresher one.
+// Record the intent, but never regress to an older token.
 function recordIntent(token, action) {
   try {
     if (token < latestToken()) return;
@@ -85,10 +81,8 @@ function superseded(token) {
 }
 
 // ---- Attention (mid-turn "your call") ----------------------------------------
-// Notification means Claude is waiting on the user mid-turn (a permission
-// prompt or a question). We don't pause for it — pausing there leaves the music
-// silent through whatever runs next — we just flag it so the statusline can
-// show a "your call" signal. Any working event or a pause clears it.
+// A permission prompt/question flags "your call" for the statusline without
+// pausing (pausing there would silence whatever runs next). Play/pause clear it.
 function setAttention() {
   try {
     fs.mkdirSync(stateDir(), { recursive: true });
@@ -183,10 +177,8 @@ async function getProp(name) {
   return reply.data;
 }
 
-// Logical "halted" state. A pause here is a SOFT pause — fade out and mute,
-// keeping the live stream flowing so resume is instant (a hard mpv pause
-// disconnects the radio stream after a while and resuming needs a slow
-// reconnect). The watchdog issues the hard pause once the session goes idle.
+// Halted = paused OR muted. Pausing mutes (a soft pause) to keep the stream
+// warm for an instant resume; a real mpv pause is left to hardPause.
 async function isHalted() {
   const paused = await getProp('pause');
   if (paused === null) return null;
@@ -230,7 +222,7 @@ function recordActivity() {
   }
 }
 
-// 0..1 — how busy the agent has been recently. Drives the equalizer colour.
+// 0..1 — how busy the agent has been recently. Drives the sprite speed/colour.
 function activityLevel() {
   try {
     const now = Date.now();
@@ -260,12 +252,10 @@ function lastActivityMs() {
   }
 }
 
-const WATCHDOG_FRESH_MS = 45000; // 3 missed 15s heartbeats = watchdog is gone
+const WATCHDOG_FRESH_MS = 45000; // heartbeat older than this = watchdog is gone
 
-// A turn can die without any hook firing (API error, spend-limit abort,
-// Ctrl+C) — no Stop, so nothing pauses the music. The watchdog is a tiny
-// detached process that pauses playback once play events stop arriving.
-// Spawned lazily here; the heartbeat check keeps it a single instance.
+// Lazily spawn the janitor that stops a player left running with no activity.
+// The heartbeat check keeps it a single instance.
 function ensureWatchdog() {
   if (process.env.VIBECODE_NO_WATCHDOG) return;
   try {
@@ -274,8 +264,7 @@ function ensureWatchdog() {
     /* no heartbeat yet: spawn one */
   }
   try {
-    // The watchdog is long-lived, so it must NOT inherit this hook's one-shot
-    // token/event — each pause it issues should stamp its own fresh time.
+    // Don't leak this hook's one-shot token/event into the long-lived watchdog.
     const env = { ...process.env };
     delete env.VIBECODE_TOKEN;
     delete env.VIBECODE_EVENT;
@@ -316,20 +305,18 @@ async function play() {
       return;
     }
   }
-  // A newer pause may have landed while we were starting/checking: bail before
-  // making a sound so a late play never overrides a more recent pause.
+  // A newer pause landed while we were starting up: bail before making a sound.
   if (superseded(token)) {
     log('play: superseded by a newer event, not resuming');
     return;
   }
   if (wasHalted) {
-    // Real halted->playing transition. Come back already audible (start at
-    // half the target so sound returns on the first frame) then ramp up.
+    // Come back already audible (start at half volume) then ramp up.
     const target = targetVolume();
     await send(ipcPath(), { command: ['set_property', 'mute', false] });
     await send(ipcPath(), { command: ['set_property', 'pause', false] });
-    // If the stream went stale while paused (empty cache), mpv's own recovery
-    // can take many seconds. Force a fresh reconnect (~1s) instead of waiting.
+    // Stale stream (empty cache)? Reconnect fresh (~1s) instead of waiting on
+    // mpv's own slow recovery.
     const cache = await getProp('demuxer-cache-time');
     if (!(typeof cache === 'number' && cache > 1)) {
       log(`play: cache empty (${cache}), reconnecting fresh`);
@@ -369,9 +356,8 @@ async function pause() {
     log('PAUSE skip: no live player');
     return;
   }
-  // Soft pause: mute at once (mpv's mute is click-free) so the music stops the
-  // instant Claude asks, and keep the stream flowing so the next play is
-  // immediate. The watchdog hard-pauses after the idle timeout.
+  // Soft pause: mute at once (click-free) and keep the stream flowing so the
+  // next play is instant.
   await send(ipcPath(), { command: ['set_property', 'mute', true] });
   await logAudio(`PAUSE done in ${Date.now() - t0}ms`);
   ensureWatchdog();
