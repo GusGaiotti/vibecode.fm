@@ -30,6 +30,46 @@ instancia de [mpv](https://mpv.io) en segundo plano, a través de su canal JSON 
 Es un único binario nativo, sin dependencias. Los hooks siempre salen con código 0 y nunca rompen
 una sesión; si mpv no está instalado, el plugin simplemente no hace nada, en silencio.
 
+## Arquitectura
+
+Cada evento de Claude Code ejecuta el binario por unos milisegundos; le da órdenes a un mpv en
+segundo plano por el socket JSON IPC y termina. Una llamada aparte `statusline` dibuja la línea
+temática en cada repintado, y un watchdog ligero pausa la reproducción si la sesión queda inactiva.
+
+```mermaid
+flowchart TD
+    subgraph cc["Claude Code"]
+        ev["Hook events<br/>play: UserPromptSubmit · Pre/PostToolUse · PermissionRequest<br/>pause: Notification · Stop"]
+        rp["Status-line repaint"]
+    end
+
+    subgraph plugin["vibecode-fm — native binary (Rust)"]
+        disp["main · dispatch"]
+        ctrl["controller<br/>intent tokens · fades · state"]
+        sl["statusline<br/>theme · sprites · gradient"]
+    end
+
+    mpv["mpv · background player"]
+    wd["watchdog<br/>pauses when idle"]
+    st[("state dir<br/>intent · station · volume")]
+    soma["SomaFM"]
+    you["🔊 you"]
+    term["📻 themed status line"]
+
+    ev -->|"vibecode-fm play / pause"| disp
+    rp -->|"vibecode-fm statusline"| disp
+    disp --> ctrl
+    disp --> sl
+    ctrl <-->|"JSON IPC — pipe / socket"| mpv
+    ctrl -.->|"spawns"| wd
+    wd -.->|"IPC"| mpv
+    ctrl <--> st
+    sl --> st
+    mpv -->|"stream"| soma
+    mpv -->|"audio"| you
+    sl --> term
+```
+
 ## Requisitos
 
 - **[mpv](https://mpv.io)** en tu `PATH`:
