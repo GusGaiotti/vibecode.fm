@@ -39,7 +39,7 @@ cada repintura, e um watchdog leve pausa a reprodução se a sessão ficar ocios
 ```mermaid
 flowchart TD
     subgraph cc["Claude Code"]
-        ev["Hook events<br/>play: UserPromptSubmit · Pre/PostToolUse · PermissionRequest<br/>pause: Notification · Stop"]
+        ev["Hook events<br/>play: UserPromptSubmit · Pre/PostToolUse<br/>pause: PermissionRequest · Notification · Stop"]
         rp["Status-line repaint"]
     end
 
