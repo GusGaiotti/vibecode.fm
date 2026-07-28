@@ -37,12 +37,16 @@ fn env_on(name: &str) -> bool {
     )
 }
 
+fn minimal() -> bool {
+    env_on("VIBECODE_MINIMAL") || controller::minimal_active()
+}
+
 fn sprites_enabled() -> bool {
-    !env_on("VIBECODE_MINIMAL") && !env_off("VIBECODE_SPRITES")
+    !minimal() && !env_off("VIBECODE_SPRITES")
 }
 
 fn splash_enabled() -> bool {
-    !env_on("VIBECODE_MINIMAL") && !env_off("VIBECODE_SPLASH")
+    !minimal() && !env_off("VIBECODE_SPLASH")
 }
 
 fn default_theme() -> Theme {

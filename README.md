@@ -83,6 +83,7 @@ Submit a prompt and the music starts.
 | `/vibecode-fm:next` | Skip to the next station |
 | `/vibecode-fm:volume <up\|down\|0-100>` | Set the volume |
 | `/vibecode-fm:focus <on\|off>` | On (default): pause when it's your turn. Off: play non-stop |
+| `/vibecode-fm:minimal <on\|off>` | Status line shows only the track name (no sprites/phrase) |
 | `/vibecode-fm:on` / `:off` | Enable / disable the plugin |
 | `/vibecode-fm:help` | Command + settings reference |
 
