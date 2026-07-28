@@ -23,7 +23,7 @@ background [mpv](https://mpv.io) instance over its JSON IPC channel:
 |---|---|
 | You submit a prompt | ▶ plays |
 | Claude runs a tool | ▶ plays |
-| A permission prompt (yes/no) appears | ▶ keeps playing |
+| It needs you — a permission prompt, a question, or it goes idle | ⏸ pauses (resumes when you answer) |
 | Claude finishes the turn | ⏸ pauses |
 | Session ends | ⏸ pauses |
 
@@ -147,6 +147,24 @@ Prefer something quieter? Set these in the `env` block of your `settings.json`:
 | `VIBECODE_SPRITES=0` | Drop the sprites (keep the phrase) |
 | `VIBECODE_SPLASH=0` | Drop the phrase (keep the sprites) |
 
+### Already have a status line?
+
+The music and the status line are independent — the hooks drive playback whether or not you use
+vibecode.fm's line. Run `/statusline`, use `ccstatusline`, or keep your own: the music still
+works, you just won't see the themed line.
+
+Want both? Embed a compact "now playing" segment in your own status-line script:
+
+```sh
+vibecode-fm segment    # e.g. "► Groove Salad · SomaFM"  (prints nothing when stopped)
+```
+
+A wrapper that appends it to your existing line:
+
+```sh
+printf '%s  %s' "$(my-statusline)" "$(vibecode-fm segment)"
+```
+
 ## Configuration
 
 All optional, via environment variables:
@@ -184,8 +202,11 @@ The default streams [SomaFM](https://somafm.com) — listener-supported, so
 
 These are Claude Code / terminal constraints, not bugs — documented for honesty:
 
-- **Ctrl+C doesn't pause.** Interrupting a turn fires no hook, so the plugin can't react;
-  the music pauses on the next turn that ends normally.
+- **Ctrl+C can't pause instantly.** Claude Code fires no hook when you interrupt a turn — it
+  suspends it silently (there's an open [feature request](https://github.com/anthropics/claude-code/issues/9516)
+  for an interrupt hook). So the music keeps playing until Claude's own idle notification (~60s),
+  the next attention prompt, or the next turn that ends. A plugin can't safely pause sooner:
+  only Claude Code can tell "idle" apart from "a long tool still running."
 - **The status line updates on Claude Code's repaint schedule**, not on demand, so the
   play/pause transition can lag a beat. The sprite animation is time-based for the same
   reason — it can't be synced to the audio.

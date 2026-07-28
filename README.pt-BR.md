@@ -23,7 +23,7 @@ do [mpv](https://mpv.io) rodando ao fundo, pelo canal JSON IPC dele:
 |---|---|
 | Você envia um prompt | ▶ toca |
 | O Claude roda uma ferramenta | ▶ toca |
-| Aparece um pedido de permissão (sim/não) | ▶ continua tocando |
+| Precisa de você — permissão, uma pergunta, ou ficou ocioso | ⏸ pausa (volta quando você responde) |
 | O Claude termina o turno | ⏸ pausa |
 | A sessão encerra | ⏸ pausa |
 
@@ -147,6 +147,24 @@ Prefere algo mais discreto? Configure no bloco `env` do seu `settings.json`:
 | `VIBECODE_SPRITES=0` | Remove os sprites (mantém a frase) |
 | `VIBECODE_SPLASH=0` | Remove a frase (mantém os sprites) |
 
+### Já tem uma status line?
+
+A música e a status line são independentes — os hooks controlam a reprodução usando ou não a
+linha do vibecode.fm. Rode `/statusline`, use o `ccstatusline`, ou mantenha a sua: a música
+continua funcionando, você só não vê a linha temática.
+
+Quer as duas? Embuta um segmento compacto de "tocando agora" no seu próprio script de status line:
+
+```sh
+vibecode-fm segment    # ex.: "► Groove Salad · SomaFM"  (não imprime nada quando parado)
+```
+
+Um wrapper que anexa isso à sua linha atual:
+
+```sh
+printf '%s  %s' "$(minha-statusline)" "$(vibecode-fm segment)"
+```
+
 ## Configuração
 
 Tudo opcional, via variáveis de ambiente:
@@ -184,8 +202,12 @@ Por padrão toca o [SomaFM](https://somafm.com) — que se mantém com doações
 
 São restrições do Claude Code / do terminal, não bugs — documentadas por honestidade:
 
-- **Ctrl+C não pausa.** Interromper um turno não dispara hook nenhum, então o plugin não tem
-  como reagir; a música pausa no próximo turno que terminar normalmente.
+- **Ctrl+C não pausa na hora.** O Claude Code não dispara hook nenhum quando você interrompe um
+  turno — ele suspende em silêncio (há um [pedido de feature](https://github.com/anthropics/claude-code/issues/9516)
+  aberto pra um hook de interrupção). Então a música segue até a notificação de ocioso do próprio
+  Claude (~60s), o próximo pedido de atenção, ou o próximo turno que terminar. Um plugin não
+  consegue pausar antes com segurança: só o Claude Code sabe diferenciar "ocioso" de "uma
+  ferramenta longa ainda rodando".
 - **A status line atualiza no ritmo de repintura do Claude Code**, não sob demanda, então a
   transição toca/pausa pode atrasar um instante. A animação dos sprites é baseada em tempo pelo
   mesmo motivo — não dá pra sincronizar com o áudio.

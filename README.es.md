@@ -23,7 +23,7 @@ instancia de [mpv](https://mpv.io) en segundo plano, a través de su canal JSON 
 |---|---|
 | Envías un prompt | ▶ suena |
 | Claude ejecuta una herramienta | ▶ suena |
-| Aparece un permiso (sí/no) | ▶ sigue sonando |
+| Te necesita — un permiso, una pregunta, o queda inactivo | ⏸ pausa (vuelve cuando respondes) |
 | Claude termina el turno | ⏸ pausa |
 | La sesión termina | ⏸ pausa |
 
@@ -147,6 +147,24 @@ cuando es tu turno; colores, íconos y frases vienen todos del tema de la estaci
 | `VIBECODE_SPRITES=0` | Quita los sprites (mantiene la frase) |
 | `VIBECODE_SPLASH=0` | Quita la frase (mantiene los sprites) |
 
+### ¿Ya tienes una barra de estado?
+
+La música y la barra de estado son independientes — los hooks controlan la reproducción uses o no
+la línea de vibecode.fm. Ejecuta `/statusline`, usa `ccstatusline`, o mantén la tuya: la música
+sigue funcionando, solo que no verás la línea temática.
+
+¿Quieres ambas? Inserta un segmento compacto de "sonando ahora" en tu propio script de barra de estado:
+
+```sh
+vibecode-fm segment    # p.ej. "► Groove Salad · SomaFM"  (no imprime nada cuando está detenido)
+```
+
+Un wrapper que lo añade a tu línea actual:
+
+```sh
+printf '%s  %s' "$(mi-statusline)" "$(vibecode-fm segment)"
+```
+
 ## Configuración
 
 Todo opcional, vía variables de entorno:
@@ -184,8 +202,12 @@ Por defecto suena [SomaFM](https://somafm.com) — se sostiene con donaciones de
 
 Son restricciones de Claude Code / de la terminal, no bugs — documentadas por honestidad:
 
-- **Ctrl+C no pausa.** Interrumpir un turno no dispara ningún hook, así que el plugin no puede
-  reaccionar; la música se pausa en el siguiente turno que termine normalmente.
+- **Ctrl+C no pausa al instante.** Claude Code no dispara ningún hook cuando interrumpes un turno
+  — lo suspende en silencio (hay una [solicitud de función](https://github.com/anthropics/claude-code/issues/9516)
+  abierta para un hook de interrupción). Así que la música sigue hasta la notificación de
+  inactividad de Claude (~60s), el siguiente aviso de atención, o el siguiente turno que termine.
+  Un plugin no puede pausar antes de forma segura: solo Claude Code distingue "inactivo" de "una
+  herramienta larga todavía corriendo".
 - **La barra de estado se actualiza al ritmo de repintado de Claude Code**, no bajo demanda, así
   que la transición sonar/pausar puede tardar un instante. La animación de los sprites es basada
   en tiempo por la misma razón — no se puede sincronizar con el audio.
