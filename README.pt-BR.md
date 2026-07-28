@@ -23,7 +23,7 @@ do [mpv](https://mpv.io) rodando ao fundo, pelo canal JSON IPC dele:
 |---|---|
 | Você envia um prompt | ▶ toca |
 | O Claude roda uma ferramenta | ▶ toca |
-| Aparece um pedido de permissão (sim/não) | ▶ continua tocando |
+| Precisa de você — permissão, uma pergunta, ou ficou ocioso | ⏸ pausa (volta quando você responde) |
 | O Claude termina o turno | ⏸ pausa |
 | A sessão encerra | ⏸ pausa |
 

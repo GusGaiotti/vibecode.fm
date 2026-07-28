@@ -23,7 +23,7 @@ background [mpv](https://mpv.io) instance over its JSON IPC channel:
 |---|---|
 | You submit a prompt | ▶ plays |
 | Claude runs a tool | ▶ plays |
-| A permission prompt (yes/no) appears | ▶ keeps playing |
+| It needs you — a permission prompt, a question, or it goes idle | ⏸ pauses (resumes when you answer) |
 | Claude finishes the turn | ⏸ pauses |
 | Session ends | ⏸ pauses |
 

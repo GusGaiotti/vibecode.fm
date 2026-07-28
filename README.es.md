@@ -23,7 +23,7 @@ instancia de [mpv](https://mpv.io) en segundo plano, a través de su canal JSON 
 |---|---|
 | Envías un prompt | ▶ suena |
 | Claude ejecuta una herramienta | ▶ suena |
-| Aparece un permiso (sí/no) | ▶ sigue sonando |
+| Te necesita — un permiso, una pregunta, o queda inactivo | ⏸ pausa (vuelve cuando respondes) |
 | Claude termina el turno | ⏸ pausa |
 | La sesión termina | ⏸ pausa |
 
