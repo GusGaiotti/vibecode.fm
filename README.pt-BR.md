@@ -106,6 +106,24 @@ Prefere algo mais discreto? Configure no bloco `env` do seu `settings.json`:
 | `VIBECODE_SPRITES=0` | Remove os sprites (mantém a frase) |
 | `VIBECODE_SPLASH=0` | Remove a frase (mantém os sprites) |
 
+### Já tem uma status line?
+
+A música e a status line são independentes — os hooks controlam a reprodução usando ou não a
+linha do vibecode.fm. Rode `/statusline`, use o `ccstatusline`, ou mantenha a sua: a música
+continua funcionando, você só não vê a linha temática.
+
+Quer as duas? Embuta um segmento compacto de "tocando agora" no seu próprio script de status line:
+
+```sh
+vibecode-fm segment    # ex.: "► Groove Salad · SomaFM"  (não imprime nada quando parado)
+```
+
+Um wrapper que anexa isso à sua linha atual:
+
+```sh
+printf '%s  %s' "$(minha-statusline)" "$(vibecode-fm segment)"
+```
+
 ## Configuração
 
 Tudo opcional, via variáveis de ambiente:

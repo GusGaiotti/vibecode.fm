@@ -41,6 +41,7 @@ fn main() {
         "off" => controller::off(),
         "watchdog" => watchdog::run(),
         "statusline" => statusline::render(),
+        "segment" => statusline::segment(),
         _ => {}
     }
     let _ = std::io::stdout().flush();

@@ -428,3 +428,21 @@ pub fn render() {
     };
     print!("{out}");
 }
+
+pub fn segment() {
+    let icon = controller::status();
+    if icon != "►" && icon != "❚❚" {
+        return;
+    }
+    let theme = controller::station_theme().unwrap_or_else(default_theme);
+    let stops = if theme.stops.is_empty() {
+        default_theme().stops
+    } else {
+        theme.stops
+    };
+    let title = truncate(&display_title(), 40);
+    print!(
+        "{icon} {}",
+        paint(&title, gradient_color(&stops, 0.9), true)
+    );
+}

@@ -106,6 +106,24 @@ cuando es tu turno; colores, íconos y frases vienen todos del tema de la estaci
 | `VIBECODE_SPRITES=0` | Quita los sprites (mantiene la frase) |
 | `VIBECODE_SPLASH=0` | Quita la frase (mantiene los sprites) |
 
+### ¿Ya tienes una barra de estado?
+
+La música y la barra de estado son independientes — los hooks controlan la reproducción uses o no
+la línea de vibecode.fm. Ejecuta `/statusline`, usa `ccstatusline`, o mantén la tuya: la música
+sigue funcionando, solo que no verás la línea temática.
+
+¿Quieres ambas? Inserta un segmento compacto de "sonando ahora" en tu propio script de barra de estado:
+
+```sh
+vibecode-fm segment    # p.ej. "► Groove Salad · SomaFM"  (no imprime nada cuando está detenido)
+```
+
+Un wrapper que lo añade a tu línea actual:
+
+```sh
+printf '%s  %s' "$(mi-statusline)" "$(vibecode-fm segment)"
+```
+
 ## Configuración
 
 Todo opcional, vía variables de entorno:
