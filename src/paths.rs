@@ -36,6 +36,10 @@ pub fn no_focus_flag() -> PathBuf {
     state_dir().join("nofocus")
 }
 
+pub fn minimal_flag() -> PathBuf {
+    state_dir().join("minimal")
+}
+
 pub fn station_file() -> PathBuf {
     state_dir().join("station")
 }

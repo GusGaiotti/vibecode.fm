@@ -83,6 +83,7 @@ Envía un prompt y la música arranca.
 | `/vibecode-fm:next` | Salta a la siguiente estación |
 | `/vibecode-fm:volume <up\|down\|0-100>` | Ajusta el volumen |
 | `/vibecode-fm:focus <on\|off>` | On (por defecto): pausa cuando es tu turno. Off: suena sin parar |
+| `/vibecode-fm:minimal <on\|off>` | La barra de estado muestra solo el nombre de la pista (sin sprites/frase) |
 | `/vibecode-fm:on` / `:off` | Activa / desactiva el plugin |
 | `/vibecode-fm:help` | Referencia de comandos y ajustes |
 

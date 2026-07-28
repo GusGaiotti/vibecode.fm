@@ -12,6 +12,7 @@ Show the user this reference, verbatim:
 - `/vibecode-fm:next` — skip to the next station
 - `/vibecode-fm:volume <up|down|0-100>` — set the volume
 - `/vibecode-fm:focus <on|off>` — on (default) pauses when it's your turn; off plays non-stop
+- `/vibecode-fm:minimal <on|off>` — status line shows only the track name (no sprites/phrase)
 - `/vibecode-fm:on` / `/vibecode-fm:off` — enable / disable the plugin
 - `/vibecode-fm:help` — this screen
 

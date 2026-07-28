@@ -294,6 +294,26 @@ pub fn focus(arg: Option<&str>) {
     }
 }
 
+pub fn minimal(arg: Option<&str>) {
+    let _ = fs::create_dir_all(paths::state_dir());
+    let on = match arg {
+        Some("on") => true,
+        Some("off") => false,
+        _ => !paths::minimal_flag().exists(),
+    };
+    if on {
+        let _ = fs::write(paths::minimal_flag(), "");
+        log("minimal: on");
+    } else {
+        let _ = fs::remove_file(paths::minimal_flag());
+        log("minimal: off");
+    }
+}
+
+pub fn minimal_active() -> bool {
+    paths::minimal_flag().exists()
+}
+
 pub fn status() -> String {
     if is_disabled() {
         return String::new();
