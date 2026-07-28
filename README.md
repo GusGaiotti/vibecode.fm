@@ -39,7 +39,7 @@ repaint, and a lightweight watchdog pauses playback if the session goes idle.
 ```mermaid
 flowchart TD
     subgraph cc["Claude Code"]
-        ev["Hook events<br/>play: UserPromptSubmit · Pre/PostToolUse · PermissionRequest<br/>pause: Notification · Stop"]
+        ev["Hook events<br/>play: UserPromptSubmit · Pre/PostToolUse<br/>pause: PermissionRequest · Notification · Stop"]
         rp["Status-line repaint"]
     end
 
