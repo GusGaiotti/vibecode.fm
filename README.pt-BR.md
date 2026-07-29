@@ -131,17 +131,9 @@ próprias cores, ícones e frases na status line. Sinônimos comuns também func
 
 ## A status line
 
-Ela mostra a faixa atual à esquerda, sprites temáticos flutuando e uma frase rotativa no meio,
-e o modelo à direita. Os sprites se mexem enquanto o Claude trabalha e ficam parados quando é a
-sua vez; cores, ícones e frases vêm todos do tema da estação atual.
-
-Prefere algo mais discreto? Configure no bloco `env` do seu `settings.json`:
-
-| Variável | Efeito |
-|---|---|
-| `VIBECODE_MINIMAL=1` | Só o ícone e o título |
-| `VIBECODE_SPRITES=0` | Remove os sprites (mantém a frase) |
-| `VIBECODE_SPLASH=0` | Remove a frase (mantém os sprites) |
+A faixa à esquerda, sprites temáticos flutuando e uma frase rotativa no meio, o modelo à direita
+— tudo do tema da estação atual. Quer mais enxuto? `/vibecode-fm:minimal on` mostra só a faixa;
+`/vibecode-fm:statusline off` esconde ela por completo.
 
 ### Já tem uma status line?
 
@@ -171,7 +163,7 @@ Tudo opcional, via variáveis de ambiente:
 | `VIBECODE_SOURCE` | playlist embutida | Qualquer arquivo, URL ou `.m3u` que o mpv abra |
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Seu arquivo de estações customizadas |
 | `VIBECODE_MPV_BIN` | `mpv` | Caminho do mpv se ele não estiver no `PATH` |
-| `VIBECODE_MPV_ARGS` | — | Flags extras do mpv (ex.: `--ao=pulse` no WSL) |
+| `VIBECODE_MPV_ARGS` | — | Flags extras do mpv |
 
 ### Estações customizadas
 
@@ -210,16 +202,8 @@ São restrições do Claude Code / do terminal, não bugs — documentadas por h
 - **Um comando longo que você aprova fica em silêncio até terminar** — não há hook pra "ferramenta
   iniciou após aprovação", então a música volta quando a ferramenta acaba. Ferramentas rápidas
   voltam de forma imperceptível. (`/focus off` contorna isso nunca pausando.)
-- **O áudio foi verificado no Windows.** O código é cross-platform e a CI passa no macOS e no
-  Linux, mas o teste de áudio real nesses sistemas está pendente da comunidade — reporte problemas.
-
-## WSL
-
-No WSL o mpv muitas vezes cai numa saída quebrada e toca em silêncio. Force o PulseAudio:
-
-```sh
-echo 'export VIBECODE_MPV_ARGS="--ao=pulse"' >> ~/.bashrc
-```
+- **O áudio só foi testado no Windows por enquanto.** O código é cross-platform e a CI passa no
+  macOS e no Linux, mas o teste de áudio real nesses sistemas está pendente da comunidade — reporte problemas.
 
 ## Desenvolvimento
 
