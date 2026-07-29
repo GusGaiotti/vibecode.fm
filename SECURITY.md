@@ -25,6 +25,23 @@ vibecode.fm is a local audio plugin with a deliberately small attack surface:
 - **All state lives in a per-user temp directory** (flags, logs, chosen station). No secrets
   are written.
 
+## Fetching the binary
+
+On first start the plugin runs `scripts/download-binary.sh`, which downloads the prebuilt
+binary for your platform from this repository's GitHub release.
+
+- The download is over **HTTPS from `github.com`** — the release is the trust root, the same
+  one you rely on when installing the plugin itself.
+- The download is **verified against the SHA-256 checksum published in the same release**; a
+  mismatch aborts and installs nothing.
+- The script **only ever writes `bin/vibecode-fm`**, skips if it already exists (so a
+  self-built binary is never overwritten), and **always exits 0** — a failed or blocked
+  download never breaks a session, it just means no music until the binary is present.
+- Nothing is fetched or executed if you place the binary yourself; the check short-circuits.
+
+If you prefer not to auto-download, build from source (`cargo build --release`) and drop the
+binary in `bin/` before first start.
+
 ## Notes for the security-conscious
 
 - The `/radio`, `/volume` and `/focus` commands pass their argument through the shell. The

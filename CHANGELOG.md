@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format follows
 ## [0.7.0]
 
 ### Added
+- Zero-setup install: the native binary is fetched from the matching GitHub release on first
+  start and verified against its published SHA-256 checksum. A self-built binary is left alone,
+  and a failed download never breaks a session.
 - `/statusline on|off` — sets up (or removes) the themed status line by editing `settings.json`
   for you, so there's no manual config step. Malformed settings are left untouched.
 - `/debug on|off` — toggles the event/audio trace log from within Claude Code.

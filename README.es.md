@@ -93,15 +93,9 @@ En Claude Code:
 /plugin install vibecode-fm@vibecode-fm
 ```
 
-Consigue el binario. Descarga el precompilado para tu plataforma desde la
-[última release](https://github.com/GusGaiotti/vibecode.fm/releases/latest), o compílalo tú mismo
-(necesitas el [toolchain de Rust](https://rustup.rs)):
-
-```sh
-cargo build --release        # genera target/release/vibecode-fm
-```
-
-Coloca el binario en `bin/vibecode-fm` (o `bin/vibecode-fm.exe` en Windows) dentro del plugin.
+El binario nativo se descarga automáticamente en el primer arranque — el precompilado para tu
+plataforma desde la [última release](https://github.com/GusGaiotti/vibecode.fm/releases/latest),
+verificado contra su checksum publicado. Nada más que descargar.
 
 Luego enciende la barra de estado temática — sin editar el `settings.json` a mano:
 
@@ -110,6 +104,10 @@ Luego enciende la barra de estado temática — sin editar el `settings.json` a 
 ```
 
 Reinicia Claude Code, envía un prompt, y la música arranca.
+
+> ¿Prefieres compilarlo? Con el [toolchain de Rust](https://rustup.rs), ejecuta `cargo build
+> --release` en la carpeta del plugin y coloca el resultado en `bin/vibecode-fm` (o
+> `bin/vibecode-fm.exe` en Windows) — el auto-download salta lo que ya esté ahí.
 
 ## Comandos
 
