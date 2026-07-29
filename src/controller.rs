@@ -7,11 +7,7 @@ use serde_json::json;
 use std::env;
 use std::fs;
 use std::process::{Command, Stdio};
-use std::thread::sleep;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-const FADE_MS: u64 = 180;
-const FADE_STEPS: i64 = 6;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn now_ms() -> i64 {
     SystemTime::now()
@@ -85,24 +81,6 @@ fn is_halted() -> Option<bool> {
         return Some(true);
     }
     Some(ipc::get_prop("mute").and_then(|m| m.as_bool()) == Some(true))
-}
-
-fn fade(from: i64, to: i64, guard: Option<i64>) -> bool {
-    for i in 1..=FADE_STEPS {
-        if let Some(g) = guard {
-            if superseded(g) {
-                return false;
-            }
-        }
-        let v = (from as f64 + (to - from) as f64 * i as f64 / FADE_STEPS as f64).round() as i64;
-        ipc::set_prop("volume", json!(v));
-        sleep(Duration::from_millis(FADE_MS / FADE_STEPS as u64));
-    }
-    true
-}
-
-fn fade_to(target: i64) {
-    fade(0, target, None);
 }
 
 fn record_activity() {
@@ -179,9 +157,7 @@ pub fn play() {
             ipc::set_prop("mute", json!(false));
             ipc::set_prop("pause", json!(false));
         }
-        if !fade((target as f64 / 2.0).round() as i64, target, Some(token)) {
-            ipc::set_prop("mute", json!(true));
-        }
+        ipc::set_prop("volume", json!(target));
     }
     log_audio(&format!("PLAY done in {}ms", now_ms() - t0));
     ensure_watchdog();
@@ -226,10 +202,9 @@ fn apply_station(url: &str) {
     record_activity();
     if player::alive() {
         ipc::command(json!(["loadfile", url]));
-        ipc::set_prop("volume", json!(0));
+        ipc::set_prop("volume", json!(volume()));
         ipc::set_prop("mute", json!(false));
         ipc::set_prop("pause", json!(false));
-        fade_to(volume());
     } else {
         player::start(url, volume());
         ipc::set_prop("mute", json!(false));
