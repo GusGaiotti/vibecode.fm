@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/download-binary.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [
