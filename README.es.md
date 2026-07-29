@@ -197,12 +197,13 @@ Por defecto suena [SomaFM](https://somafm.com) — se sostiene con donaciones de
 
 Son restricciones de Claude Code / de la terminal, no bugs — documentadas por honestidad:
 
-- **Ctrl+C no pausa al instante.** Claude Code no dispara ningún hook cuando interrumpes un turno
+- **Ctrl+C no pausa la música.** Claude Code no dispara ningún hook cuando interrumpes un turno
   — lo suspende en silencio (hay una [solicitud de función](https://github.com/anthropics/claude-code/issues/9516)
-  abierta para un hook de interrupción). Así que la música sigue hasta la notificación de
-  inactividad de Claude (~60s), el siguiente aviso de atención, o el siguiente turno que termine.
-  Un plugin no puede pausar antes de forma segura: solo Claude Code distingue "inactivo" de "una
-  herramienta larga todavía corriendo".
+  abierta para un hook de interrupción), y la notificación de inactividad que aparece tras un fin
+  de turno *normal* **no** aparece tras una interrupción. Así que, tras Ctrl+C, la música sigue
+  sonando hasta que el siguiente turno termine normalmente, o hasta que actúes — tu siguiente
+  prompt la reanuda y vuelve a pausarla. Un plugin no puede pausar antes de forma segura: solo
+  Claude Code distingue "inactivo" de "una herramienta larga corriendo".
 - **La barra de estado se actualiza al ritmo de repintado de Claude Code**, no bajo demanda, así
   que la transición sonar/pausar puede tardar un instante. La animación de los sprites es basada
   en tiempo por la misma razón — no se puede sincronizar con el audio.

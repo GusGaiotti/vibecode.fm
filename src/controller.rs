@@ -368,7 +368,7 @@ pub fn debug(arg: Option<&str>) {
 
 pub fn setup_statusline(arg: Option<&str>) {
     let path = paths::settings_file();
-    let mut root: serde_json::Value = match fs::read_to_string(&path) {
+    let root: serde_json::Value = match fs::read_to_string(&path) {
         Ok(s) => match serde_json::from_str(&s) {
             Ok(v) => v,
             Err(_) => {
@@ -378,20 +378,10 @@ pub fn setup_statusline(arg: Option<&str>) {
         },
         Err(_) => serde_json::json!({}),
     };
-    let Some(obj) = root.as_object_mut() else {
-        return;
-    };
-    if arg == Some("off") {
-        obj.remove("statusLine");
-    } else {
-        let exe = env::current_exe()
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|_| "vibecode-fm".into());
-        obj.insert(
-            "statusLine".into(),
-            json!({ "type": "command", "command": format!("\"{exe}\" statusline") }),
-        );
-    }
+    let exe = env::current_exe()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| "vibecode-fm".into());
+    let root = statusline_config(root, arg != Some("off"), &exe);
     if let Ok(pretty) = serde_json::to_string_pretty(&root) {
         if let Some(dir) = path.parent() {
             let _ = fs::create_dir_all(dir);
@@ -403,9 +393,58 @@ pub fn setup_statusline(arg: Option<&str>) {
     }
 }
 
+fn statusline_config(mut root: serde_json::Value, on: bool, exe: &str) -> serde_json::Value {
+    if let Some(obj) = root.as_object_mut() {
+        if on {
+            obj.insert(
+                "statusLine".into(),
+                json!({ "type": "command", "command": format!("\"{exe}\" statusline") }),
+            );
+        } else {
+            obj.remove("statusLine");
+        }
+    }
+    root
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn statusline_config_adds_and_preserves_other_keys() {
+        let out = statusline_config(
+            json!({ "model": "opus", "theme": "dark" }),
+            true,
+            "/p/vibecode-fm",
+        );
+        assert_eq!(out["model"], "opus");
+        assert_eq!(out["theme"], "dark");
+        assert_eq!(out["statusLine"]["type"], "command");
+        assert!(out["statusLine"]["command"]
+            .as_str()
+            .unwrap()
+            .contains("statusline"));
+    }
+
+    #[test]
+    fn statusline_config_off_removes_only_statusline() {
+        let out = statusline_config(
+            json!({ "model": "opus", "statusLine": { "type": "command", "command": "x" } }),
+            false,
+            "/p",
+        );
+        assert!(out.get("statusLine").is_none());
+        assert_eq!(out["model"], "opus");
+    }
+
+    #[test]
+    fn statusline_config_leaves_non_objects_untouched() {
+        assert_eq!(
+            statusline_config(json!([1, 2, 3]), true, "/p"),
+            json!([1, 2, 3])
+        );
+    }
 
     #[test]
     fn sanitize_strips_control_and_escape_chars() {

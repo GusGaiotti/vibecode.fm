@@ -197,11 +197,12 @@ The default streams [SomaFM](https://somafm.com) — listener-supported, so
 
 These are Claude Code / terminal constraints, not bugs — documented for honesty:
 
-- **Ctrl+C can't pause instantly.** Claude Code fires no hook when you interrupt a turn — it
+- **Ctrl+C doesn't pause the music.** Claude Code fires no hook when you interrupt a turn — it
   suspends it silently (there's an open [feature request](https://github.com/anthropics/claude-code/issues/9516)
-  for an interrupt hook). So the music keeps playing until Claude's own idle notification (~60s),
-  the next attention prompt, or the next turn that ends. A plugin can't safely pause sooner:
-  only Claude Code can tell "idle" apart from "a long tool still running."
+  for an interrupt hook), and the idle notification that fires after a *normal* turn-end does
+  **not** fire after an interrupt. So after Ctrl+C the music keeps playing until the next turn
+  ends normally, or until you act — your next prompt resumes and re-pauses it as usual. A plugin
+  can't safely pause sooner: only Claude Code can tell "idle" apart from "a long tool running."
 - **The status line updates on Claude Code's repaint schedule**, not on demand, so the
   play/pause transition can lag a beat. The sprite animation is time-based for the same
   reason — it can't be synced to the audio.
