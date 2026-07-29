@@ -34,7 +34,7 @@ uma sessão; se o mpv não estiver instalado, o plugin simplesmente não faz nad
 
 Cada evento do Claude Code roda o binário por alguns milissegundos; ele comanda um mpv em segundo
 plano pelo socket JSON IPC e encerra. Uma chamada separada `statusline` desenha a linha temática a
-cada repintura, e um watchdog leve pausa a reprodução se a sessão ficar ociosa.
+cada repintura, e um watchdog leve encerra o mpv em segundo plano se a sessão ficar ociosa.
 
 ```mermaid
 flowchart TD
@@ -45,12 +45,12 @@ flowchart TD
 
     subgraph plugin["vibecode-fm — native binary (Rust)"]
         disp["main · dispatch"]
-        ctrl["controller<br/>intent tokens · fades · state"]
+        ctrl["controller<br/>intent tokens · state"]
         sl["statusline<br/>theme · sprites · gradient"]
     end
 
     mpv["mpv · background player"]
-    wd["watchdog<br/>pauses when idle"]
+    wd["watchdog<br/>quits mpv when idle"]
     st[("state dir<br/>intent · station · volume")]
     soma["SomaFM"]
     you["🔊 you"]
@@ -65,6 +65,7 @@ flowchart TD
     wd -.->|"IPC"| mpv
     ctrl <--> st
     sl --> st
+    sl -.->|"reads status · track"| mpv
     mpv -->|"stream"| soma
     mpv -->|"audio"| you
     sl --> term
