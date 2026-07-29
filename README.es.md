@@ -34,7 +34,7 @@ una sesión; si mpv no está instalado, el plugin simplemente no hace nada, en s
 
 Cada evento de Claude Code ejecuta el binario por unos milisegundos; le da órdenes a un mpv en
 segundo plano por el socket JSON IPC y termina. Una llamada aparte `statusline` dibuja la línea
-temática en cada repintado, y un watchdog ligero pausa la reproducción si la sesión queda inactiva.
+temática en cada repintado, y un watchdog ligero cierra el mpv en segundo plano si la sesión queda inactiva.
 
 ```mermaid
 flowchart TD
@@ -45,12 +45,12 @@ flowchart TD
 
     subgraph plugin["vibecode-fm — native binary (Rust)"]
         disp["main · dispatch"]
-        ctrl["controller<br/>intent tokens · fades · state"]
+        ctrl["controller<br/>intent tokens · state"]
         sl["statusline<br/>theme · sprites · gradient"]
     end
 
     mpv["mpv · background player"]
-    wd["watchdog<br/>pauses when idle"]
+    wd["watchdog<br/>quits mpv when idle"]
     st[("state dir<br/>intent · station · volume")]
     soma["SomaFM"]
     you["🔊 you"]
@@ -65,6 +65,7 @@ flowchart TD
     wd -.->|"IPC"| mpv
     ctrl <--> st
     sl --> st
+    sl -.->|"reads status · track"| mpv
     mpv -->|"stream"| soma
     mpv -->|"audio"| you
     sl --> term
@@ -131,17 +132,9 @@ propios colores, íconos y frases en la barra de estado. También funcionan sin�
 
 ## La barra de estado
 
-Muestra la pista actual a la izquierda, sprites temáticos flotando y una frase rotativa en el
-centro, y el modelo a la derecha. Los sprites se mueven mientras Claude trabaja y quedan quietos
-cuando es tu turno; colores, íconos y frases vienen todos del tema de la estación actual.
-
-¿Prefieres algo más discreto? Configúralo en el bloque `env` de tu `settings.json`:
-
-| Variable | Efecto |
-|---|---|
-| `VIBECODE_MINIMAL=1` | Solo el ícono y el título |
-| `VIBECODE_SPRITES=0` | Quita los sprites (mantiene la frase) |
-| `VIBECODE_SPLASH=0` | Quita la frase (mantiene los sprites) |
+La pista a la izquierda, sprites temáticos flotando y una frase rotativa en el centro, el modelo
+a la derecha — todo del tema de la estación actual. ¿La quieres compacta? `/vibecode-fm:minimal on`
+muestra solo la pista; `/vibecode-fm:statusline off` la oculta por completo.
 
 ### ¿Ya tienes una barra de estado?
 
@@ -171,7 +164,7 @@ Todo opcional, vía variables de entorno:
 | `VIBECODE_SOURCE` | playlist incluida | Cualquier archivo, URL o `.m3u` que mpv pueda abrir |
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Tu archivo de estaciones personalizadas |
 | `VIBECODE_MPV_BIN` | `mpv` | Ruta a mpv si no está en tu `PATH` |
-| `VIBECODE_MPV_ARGS` | — | Flags extra de mpv (ej.: `--ao=pulse` en WSL) |
+| `VIBECODE_MPV_ARGS` | — | Flags extra de mpv |
 
 ### Estaciones personalizadas
 
@@ -210,16 +203,8 @@ Son restricciones de Claude Code / de la terminal, no bugs — documentadas por 
 - **Un comando largo que apruebas queda en silencio hasta que termina** — no hay hook para
   "herramienta iniciada tras aprobación", así que la música vuelve cuando la herramienta acaba.
   Las herramientas rápidas vuelven de forma imperceptible. (`/focus off` lo evita al no pausar.)
-- **El audio está verificado en Windows.** El código es multiplataforma y la CI pasa en macOS y
-  Linux, pero la prueba de audio real ahí está pendiente de la comunidad — reporta problemas.
-
-## WSL
-
-En WSL, mpv suele caer en una salida rota y suena en silencio. Fuerza PulseAudio:
-
-```sh
-echo 'export VIBECODE_MPV_ARGS="--ao=pulse"' >> ~/.bashrc
-```
+- **El audio solo está probado en Windows por ahora.** El código es multiplataforma y la CI pasa
+  en macOS y Linux, pero la prueba de audio real ahí está pendiente de la comunidad — reporta problemas.
 
 ## Desarrollo
 

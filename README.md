@@ -34,7 +34,7 @@ session; if mpv isn't installed the plugin does nothing, silently.
 
 Each Claude Code event runs the binary for a few milliseconds; it nudges a background mpv over
 its JSON IPC socket and exits. A separate `statusline` call draws the themed line on every
-repaint, and a lightweight watchdog pauses playback if the session goes idle.
+repaint, and a lightweight watchdog quits the background mpv if the session goes idle.
 
 ```mermaid
 flowchart TD
@@ -45,12 +45,12 @@ flowchart TD
 
     subgraph plugin["vibecode-fm — native binary (Rust)"]
         disp["main · dispatch"]
-        ctrl["controller<br/>intent tokens · fades · state"]
+        ctrl["controller<br/>intent tokens · state"]
         sl["statusline<br/>theme · sprites · gradient"]
     end
 
     mpv["mpv · background player"]
-    wd["watchdog<br/>pauses when idle"]
+    wd["watchdog<br/>quits mpv when idle"]
     st[("state dir<br/>intent · station · volume")]
     soma["SomaFM"]
     you["🔊 you"]
@@ -65,6 +65,7 @@ flowchart TD
     wd -.->|"IPC"| mpv
     ctrl <--> st
     sl --> st
+    sl -.->|"reads status · track"| mpv
     mpv -->|"stream"| soma
     mpv -->|"audio"| you
     sl --> term
@@ -131,17 +132,9 @@ colours, icons and splash phrases. Common synonyms work too (`lofi`, `retro`, `d
 
 ## The status line
 
-It shows the live track on the left, drifting themed sprites and a rotating splash phrase in
-the middle, and the model on the right. The sprites drift while Claude works and sit still
-when it's your turn; colours, icons and phrases all come from the current station's theme.
-
-Prefer something quieter? Set these in the `env` block of your `settings.json`:
-
-| Variable | Effect |
-|---|---|
-| `VIBECODE_MINIMAL=1` | Just the icon and title |
-| `VIBECODE_SPRITES=0` | Drop the sprites (keep the phrase) |
-| `VIBECODE_SPLASH=0` | Drop the phrase (keep the sprites) |
+The live track on the left, drifting themed sprites and a rotating splash phrase in the middle,
+the model on the right — all from the current station's theme. Want it compact?
+`/vibecode-fm:minimal on` shows just the track; `/vibecode-fm:statusline off` hides it entirely.
 
 ### Already have a status line?
 
@@ -171,7 +164,7 @@ All optional, via environment variables:
 | `VIBECODE_SOURCE` | bundled playlist | Any file, URL or `.m3u` mpv can open |
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Your custom stations file |
 | `VIBECODE_MPV_BIN` | `mpv` | Path to mpv if it isn't on your `PATH` |
-| `VIBECODE_MPV_ARGS` | — | Extra mpv flags (e.g. `--ao=pulse` on WSL) |
+| `VIBECODE_MPV_ARGS` | — | Extra mpv flags |
 
 ### Custom stations
 
@@ -209,16 +202,8 @@ These are Claude Code / terminal constraints, not bugs — documented for honest
 - **A long command you approve stays quiet until it finishes** — there's no hook for "tool
   started after approval", so the music resumes when the tool ends. Short tools resume
   imperceptibly. (`/focus off` sidesteps this by never pausing.)
-- **Audio is verified on Windows.** The code is cross-platform and CI passes on macOS and
-  Linux, but real-audio testing there is community-pending — please report issues.
-
-## WSL
-
-mpv on WSL often defaults to a broken output and plays silently. Force PulseAudio:
-
-```sh
-echo 'export VIBECODE_MPV_ARGS="--ao=pulse"' >> ~/.bashrc
-```
+- **Audio is only tested on Windows so far.** The code is cross-platform and CI passes on macOS
+  and Linux, but real-audio testing there is community-pending — please report issues.
 
 ## Development
 
