@@ -100,19 +100,15 @@ yourself (needs a [Rust toolchain](https://rustup.rs)):
 cargo build --release        # produces target/release/vibecode-fm
 ```
 
-Drop the binary at `bin/vibecode-fm` (or `bin/vibecode-fm.exe` on Windows) inside the plugin,
-then point your status line at it (in `settings.json`):
+Drop the binary at `bin/vibecode-fm` (or `bin/vibecode-fm.exe` on Windows) inside the plugin.
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/plugins/marketplaces/vibecode-fm/bin/vibecode-fm statusline"
-  }
-}
+Then turn on the themed status line — no editing `settings.json` by hand:
+
+```
+/vibecode-fm:statusline on
 ```
 
-Submit a prompt and the music starts.
+Restart Claude Code, submit a prompt, and the music starts.
 
 ## Commands
 
@@ -176,7 +172,6 @@ All optional, via environment variables:
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Your custom stations file |
 | `VIBECODE_MPV_BIN` | `mpv` | Path to mpv if it isn't on your `PATH` |
 | `VIBECODE_MPV_ARGS` | — | Extra mpv flags (e.g. `--ao=pulse` on WSL) |
-| `VIBECODE_DEBUG` | off | Log hook decisions and timings under the state dir |
 
 ### Custom stations
 

@@ -35,8 +35,8 @@ pub fn run() {
         }
         let idle = now_ms() - controller::last_activity_ms();
         if idle >= idle_timeout_ms() {
-            log(&format!("abandoned {}s, stopping", idle / 1000));
-            controller::hard_pause();
+            log(&format!("abandoned {}s, quitting mpv", idle / 1000));
+            controller::quit_player();
             break;
         }
     }
