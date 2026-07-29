@@ -70,8 +70,19 @@ pub fn log_file() -> PathBuf {
         .unwrap_or_else(|_| state_dir().join("vibecode.log"))
 }
 
+pub fn debug_flag() -> PathBuf {
+    state_dir().join("debug")
+}
+
 pub fn debug_enabled() -> bool {
-    env::var("VIBECODE_DEBUG").is_ok() || state_dir().join("debug").exists()
+    env::var("VIBECODE_DEBUG").is_ok() || debug_flag().exists()
+}
+
+pub fn settings_file() -> PathBuf {
+    let home = env::var("HOME")
+        .or_else(|_| env::var("USERPROFILE"))
+        .unwrap_or_default();
+    PathBuf::from(home).join(".claude").join("settings.json")
 }
 
 pub fn default_source() -> String {

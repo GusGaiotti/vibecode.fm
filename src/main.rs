@@ -42,6 +42,8 @@ fn main() {
         "minimal" => controller::minimal(arg),
         "on" => controller::on(),
         "off" => controller::off(),
+        "debug" => controller::debug(arg),
+        "setup-statusline" => controller::setup_statusline(arg),
         "watchdog" => watchdog::run(),
         "statusline" => statusline::render(),
         "segment" => statusline::segment(),

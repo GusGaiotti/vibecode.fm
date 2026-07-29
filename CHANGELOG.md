@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0]
+
+### Added
+- `/statusline on|off` — sets up (or removes) the themed status line by editing `settings.json`
+  for you, so there's no manual config step. Malformed settings are left untouched.
+- `/debug on|off` — toggles the event/audio trace log from within Claude Code.
+
+### Changed
+- Permission prompts now pause the music (and resume when you answer); any attention pauses.
+- The watchdog now quits the background mpv when a session is abandoned instead of leaving it
+  muted; the next tool run brings it back.
+
 ## [0.6.0] — 2025-07-25
 
 First public release.

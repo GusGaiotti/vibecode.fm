@@ -105,14 +105,6 @@ fn fade_to(target: i64) {
     fade(0, target, None);
 }
 
-fn fade_out() {
-    if let Some(cur) = ipc::get_prop("volume").and_then(|v| v.as_f64()) {
-        if cur > 0.0 {
-            fade(cur as i64, 0, None);
-        }
-    }
-}
-
 fn record_activity() {
     let _ = fs::create_dir_all(paths::state_dir());
     let _ = fs::write(paths::activity_file(), now_ms().to_string());
@@ -213,15 +205,12 @@ pub fn pause() {
     ensure_watchdog();
 }
 
-pub fn hard_pause() {
-    if !player::alive() {
-        return;
+pub fn quit_player() {
+    if player::alive() {
+        ipc::command(json!(["quit"]));
     }
-    if is_halted() == Some(false) {
-        fade_out();
-    }
-    ipc::set_prop("mute", json!(true));
-    ipc::set_prop("pause", json!(true));
+    #[cfg(unix)]
+    let _ = fs::remove_file(paths::ipc_path());
 }
 
 fn current_station() -> Option<String> {
@@ -363,13 +352,55 @@ pub fn on() {
 
 pub fn off() {
     log("action=off");
-    if player::alive() {
-        ipc::command(json!(["quit"]));
-    }
-    #[cfg(unix)]
-    let _ = fs::remove_file(paths::ipc_path());
+    quit_player();
     let _ = fs::create_dir_all(paths::state_dir());
     let _ = fs::write(paths::disabled_flag(), "");
+}
+
+pub fn debug(arg: Option<&str>) {
+    let _ = fs::create_dir_all(paths::state_dir());
+    if arg == Some("off") {
+        let _ = fs::remove_file(paths::debug_flag());
+    } else {
+        let _ = fs::write(paths::debug_flag(), "");
+    }
+}
+
+pub fn setup_statusline(arg: Option<&str>) {
+    let path = paths::settings_file();
+    let mut root: serde_json::Value = match fs::read_to_string(&path) {
+        Ok(s) => match serde_json::from_str(&s) {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("settings.json is not valid JSON; leaving it untouched");
+                return;
+            }
+        },
+        Err(_) => serde_json::json!({}),
+    };
+    let Some(obj) = root.as_object_mut() else {
+        return;
+    };
+    if arg == Some("off") {
+        obj.remove("statusLine");
+    } else {
+        let exe = env::current_exe()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| "vibecode-fm".into());
+        obj.insert(
+            "statusLine".into(),
+            json!({ "type": "command", "command": format!("\"{exe}\" statusline") }),
+        );
+    }
+    if let Ok(pretty) = serde_json::to_string_pretty(&root) {
+        if let Some(dir) = path.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+        let tmp = path.with_extension("json.tmp");
+        if fs::write(&tmp, pretty).is_ok() {
+            let _ = fs::rename(&tmp, &path);
+        }
+    }
 }
 
 #[cfg(test)]

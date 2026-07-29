@@ -100,19 +100,15 @@ Consigue el binario. Descarga el precompilado para tu plataforma desde la
 cargo build --release        # genera target/release/vibecode-fm
 ```
 
-Coloca el binario en `bin/vibecode-fm` (o `bin/vibecode-fm.exe` en Windows) dentro del plugin, y
-apunta tu barra de estado hacia él (en `settings.json`):
+Coloca el binario en `bin/vibecode-fm` (o `bin/vibecode-fm.exe` en Windows) dentro del plugin.
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "~/.claude/plugins/marketplaces/vibecode-fm/bin/vibecode-fm statusline"
-  }
-}
+Luego enciende la barra de estado temática — sin editar el `settings.json` a mano:
+
+```
+/vibecode-fm:statusline on
 ```
 
-Envía un prompt y la música arranca.
+Reinicia Claude Code, envía un prompt, y la música arranca.
 
 ## Comandos
 
@@ -176,7 +172,6 @@ Todo opcional, vía variables de entorno:
 | `VIBECODE_STATIONS` | `~/.vibecode-fm/stations.json` | Tu archivo de estaciones personalizadas |
 | `VIBECODE_MPV_BIN` | `mpv` | Ruta a mpv si no está en tu `PATH` |
 | `VIBECODE_MPV_ARGS` | — | Flags extra de mpv (ej.: `--ao=pulse` en WSL) |
-| `VIBECODE_DEBUG` | off | Registra decisiones y tiempos de los hooks en el directorio de estado |
 
 ### Estaciones personalizadas
 
