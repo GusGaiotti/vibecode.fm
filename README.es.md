@@ -216,8 +216,10 @@ Ver [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Apoyar
 
-vibecode.fm es libre y con licencia MIT. Si se gana un lugar en tu setup, puedes
-[invitarme un café](https://ko-fi.com/gustavogaiotti) — siempre opcional, nunca esperado.
+vibecode.fm es libre y con licencia MIT. Si se gana un lugar en tu setup, puedes invitarme un
+café — siempre opcional, nunca esperado.
+
+[![Invítame un café en Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gustavogaiotti)
 
 ## Licencia
 

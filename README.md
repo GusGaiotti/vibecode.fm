@@ -213,8 +213,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Support
 
-vibecode.fm is free and MIT-licensed. If it earns a spot in your setup, you can
-[buy me a coffee](https://ko-fi.com/gustavogaiotti) — always optional, never expected.
+vibecode.fm is free and MIT-licensed. If it earns a spot in your setup, you can buy me a
+coffee — always optional, never expected.
+
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/gustavogaiotti)
 
 ## License
 
