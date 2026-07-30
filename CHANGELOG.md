@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1]
+
+### Fixed
+- Music now resumes instantly after a long wait on a prompt. A pause counts as activity, and the
+  idle watchdog only reclaims the background player after 30 minutes of true inactivity (was 10),
+  so a permission prompt you leave open no longer kills the player and forces a slow cold restart.
+  Because the player stays alive, the themed status line also stays put instead of collapsing.
+
 ## [0.7.0]
 
 ### Added
