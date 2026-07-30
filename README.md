@@ -198,6 +198,10 @@ These are Claude Code / terminal constraints, not bugs — documented for honest
 - **A long command you approve stays quiet until it finishes** — there's no hook for "tool
   started after approval", so the music resumes when the tool ends. Short tools resume
   imperceptibly. (`/focus off` sidesteps this by never pausing.)
+- **One player is shared across concurrent sessions.** mpv runs once per user, so several
+  Claude Code windows share a single soundtrack that follows the most recent session's state —
+  separate per-session audio would just play over itself. A busy session can mask another that's
+  waiting on you.
 - **Audio is only tested on Windows so far.** The code is cross-platform and CI passes on macOS
   and Linux, but real-audio testing there is community-pending — please report issues.
 

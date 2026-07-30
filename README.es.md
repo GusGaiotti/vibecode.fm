@@ -201,6 +201,10 @@ Son restricciones de Claude Code / de la terminal, no bugs — documentadas por 
 - **Un comando largo que apruebas queda en silencio hasta que termina** — no hay hook para
   "herramienta iniciada tras aprobación", así que la música vuelve cuando la herramienta acaba.
   Las herramientas rápidas vuelven de forma imperceptible. (`/focus off` lo evita al no pausar.)
+- **El reproductor es único entre sesiones simultáneas.** mpv corre una vez por usuario, así que
+  varias ventanas de Claude Code comparten una sola banda sonora, que sigue el estado de la sesión
+  más reciente — un audio separado por sesión solo sonaría encima de sí mismo. Una sesión ocupada
+  puede tapar otra que te está esperando.
 - **El audio solo está probado en Windows por ahora.** El código es multiplataforma y la CI pasa
   en macOS y Linux, pero la prueba de audio real ahí está pendiente de la comunidad — reporta problemas.
 
