@@ -172,6 +172,7 @@ pub fn pause() {
         return;
     }
     record_intent(token, "pause");
+    record_activity();
     if !player::alive() {
         log("PAUSE skip: no live player");
         return;

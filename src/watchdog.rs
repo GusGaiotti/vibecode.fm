@@ -13,7 +13,7 @@ fn idle_timeout_ms() -> i64 {
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or(0);
-    (if secs > 0 { secs } else { 600 }) * 1000
+    (if secs > 0 { secs } else { 1800 }) * 1000
 }
 
 fn now_ms() -> i64 {
