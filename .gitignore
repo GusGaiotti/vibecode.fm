@@ -1,5 +1,6 @@
 /target
 /bin/vibecode-fm
 /bin/vibecode-fm.exe
+/bin/*.download.*
 *.log
 .DS_Store

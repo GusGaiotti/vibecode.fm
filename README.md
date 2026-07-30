@@ -2,9 +2,7 @@
 
 **English** · [Português](README.pt-BR.md) · [Español](README.es.md)
 
-<img width="400" height="400" alt="Gemini_Generated_Image_moy0q5moy0q5moy0" src="https://github.com/user-attachments/assets/ea5b748b-9fd1-47c3-9f9a-910ccc3ec20f" />
-
-
+<img width="400" height="400" alt="vibecode.fm logo" src="https://github.com/user-attachments/assets/ea5b748b-9fd1-47c3-9f9a-910ccc3ec20f" />
 
 **A soundtrack for your coding agent — plays while Claude Code works, stops the moment it's your turn.**
 
@@ -14,7 +12,7 @@ status line shows the current track, station and state — and it all runs on it
 
 ## How it works
 
-<img width="1867" height="727" alt="Captura de tela 2026-07-26 151956" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
+<img width="1867" height="727" alt="vibecode.fm status line during a Claude Code session" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
 
 The plugin wires [Claude Code hooks](https://code.claude.com/docs/en/hooks) to a
 background [mpv](https://mpv.io) instance over its JSON IPC channel:
@@ -212,6 +210,11 @@ cargo clippy -- -D warnings
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Support
+
+vibecode.fm is free and MIT-licensed. If it earns a spot in your setup, you can
+[buy me a coffee](https://ko-fi.com/gustavogaiotti) — always optional, never expected.
 
 ## License
 

@@ -10,11 +10,11 @@ O Claude começa a trabalhar, a música entra. Ele te devolve o turno, a música
 quando o agente está ocupado e quando ele precisa de você, sem ficar preso na tela. Uma status
 line temática mostra a faixa, a estação e o estado — e tudo roda sozinho.
 
-<img width="1882" height="141" alt="Captura de tela 2026-07-26 151637" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
+<img width="1882" height="141" alt="Status line do vibecode.fm" src="https://github.com/user-attachments/assets/b6b406dd-33f8-4ac7-8417-34fd8fb2e4d5" />
 
 ## Como funciona
 
-<img width="1867" height="727" alt="Captura de tela 2026-07-26 151956" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
+<img width="1867" height="727" alt="vibecode.fm em ação durante uma sessão do Claude Code" src="https://github.com/user-attachments/assets/f7eda0ba-5397-4196-a1df-2899ab2fa5ce" />
 
 O plugin liga os [hooks do Claude Code](https://code.claude.com/docs/en/hooks) a uma instância
 do [mpv](https://mpv.io) rodando ao fundo, pelo canal JSON IPC dele:
@@ -213,6 +213,11 @@ cargo clippy -- -D warnings
 ```
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Apoie
+
+O vibecode.fm é livre e sob licença MIT. Se ele ganhar um espaço no seu setup, você pode
+[me pagar um café](https://ko-fi.com/gustavogaiotti) — sempre opcional, nunca cobrado.
 
 ## Licença
 
